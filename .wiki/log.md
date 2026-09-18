@@ -196,3 +196,11 @@ Newest entry at the bottom.
   `TaskItem → Employee` edge.
 - `.gitignore`: `.claude/worktrees/` (agent worktrees live inside the repo folder).
 - Entity and BR pages: the domain layer is marked implemented. graph.yaml: A1, A2, FA done.
+
+## 2026-09-18 · orch · session 1 · wave B dispatched
+
+- Previous commit: fan-in A = `719b564`.
+- Task specs `agents/bus/orch-to-B1-001.md` (persistence, opus: DbContext, configurations, migration with the BR3/BR4
+  trigger, applied to a real container including `Down()`), `orch-to-B2-001.md` (service, sonnet) and
+  `orch-to-B3-001.md` (Testcontainers tests, sonnet). B2 and B3 compile-check against stubs outside the repo; real
+  compilation and test runs happen at fan-in B. graph.yaml: B1, B2, B3 in progress.
