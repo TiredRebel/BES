@@ -1,7 +1,7 @@
 ---
 title: "BR4: Completed and Cancelled are final"
 type: rule
-status: draft
+status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[task-item]]", "[[br1-completed-at]]"]
 ---

@@ -23,7 +23,7 @@ No repositories, CQRS or DI host are in scope.
   Domain, Infrastructure, Application; adds Testcontainers). Two projects so unit tests build and run without EF
   Core or Docker, which is also what fan-in A needs before B1 exists.
 - Package references per project are listed in the spec (§1). `Microsoft.EntityFrameworkCore.Relational` 10.0.12
-  is referenced explicitly in Infrastructure, pending human approval: Npgsql 10.0.3 only requires `>= 10.0.4`, and
+  is referenced explicitly in Infrastructure (approved by the human at N2): Npgsql 10.0.3 only requires `>= 10.0.4`, and
   without the pin consumers of Infrastructure fail with MSB3277 (proven by the N0 probe).
 
 ## Consequences

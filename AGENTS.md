@@ -32,15 +32,15 @@ A web API, UI or server host is out of scope.
 | Item | Version |
 |---|---|
 | .NET SDK / TFM | 10.0.401 / `net10.0` (LTS) |
-| Microsoft.EntityFrameworkCore, .Design | 10.0.12 |
+| Microsoft.EntityFrameworkCore, .Relational, .Design | 10.0.12 |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
 | dotnet-ef (global tool) | 10.0.12 |
 | xunit / xunit.runner.visualstudio / Microsoft.NET.Test.Sdk | 2.9.3 / 3.1.4 / 17.14.1 |
 | Testcontainers.PostgreSql | 4.15.0 |
 | PostgreSQL image for tests | `postgres:17-alpine` |
 
-`[uncertain]` pending human approval: an explicit `Microsoft.EntityFrameworkCore.Relational` 10.0.12 reference.
-Without it, Npgsql 10.0.3 pulls Relational 10.0.4 and any project referencing Infrastructure fails with MSB3277.
+`Microsoft.EntityFrameworkCore.Relational` is referenced explicitly in Infrastructure (approved at N2): Npgsql 10.0.3
+only requires Relational >= 10.0.4, and without the pin every project referencing Infrastructure fails with MSB3277.
 
 `Directory.Build.props` applies to every project: `Nullable`, `TreatWarningsAsErrors`,
 `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`, `GenerateDocumentationFile` with CS1591 as an error.

@@ -87,7 +87,7 @@ nodes:
     evidence:
       - "review report: invented / missing / out-of-scope items, package & API existence checks"
       - "human approval recorded in .wiki/log.md"
-    status: in_progress
+    status: done
 
   - id: S0
     name: Scaffold (solution + empty projects per approved layout)
@@ -107,7 +107,7 @@ nodes:
       - tests/TaskManagement.IntegrationTests/TaskManagement.IntegrationTests.csproj
     acceptance: "dotnet build -warnaserror && dotnet test --filter Category=Unit"
     evidence: ["build output", "`git show --stat HEAD`"]
-    status: pending
+    status: done
 
   - id: A1
     name: Domain

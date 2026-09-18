@@ -101,3 +101,34 @@ Newest entry at the bottom.
   (`--project src/Probe.Infra --connection "Host=localhost;Port=55432;…"` → "Done.", exit 0; `employees` has the seed
   row, `ck_name` exists). So the FB acceptance form works as written. Spec §15 notes that the F5 test depends on BR5
   being checked before BR3; §2a pins the `[InlineData]` enum form.
+
+## 2026-09-18 · human + orch · session 1 · N2 approved by human
+
+- Previous commit: N1/N2 artifacts = `06366c2`.
+- **N2 approved by human.**
+  - Q1: spec and graph approved as written, including the defaults: assignee set once at creation, e-mail
+    lowercased in the domain with a plain unique index, and the transition rules in spec §5.
+  - Q2: `Microsoft.EntityFrameworkCore.Relational` 10.0.12 approved as an explicit reference in Infrastructure.
+    Moved into the `AGENTS.md` stack table.
+  - Q3: remove the graphify rules from `~/.claude/CLAUDE.md`. orch removed the `## graphify` section (the
+    "for codebase questions, first run graphify query…" rules). Kept the 3-line `/graphify` slash-command trigger,
+    which only fires when the user types `/graphify`. The graphify pip package is still installed; the human did
+    not ask to uninstall it.
+- Spec, entity pages and BR pages: `status: approved`. graph.yaml: N2 done, S0 in progress.
+- Human question at the gate: which design patterns are used? Answered from the spec: rich domain model, static
+  factories, guard clauses, a transition-rule table, a service layer, EF Core `DbContext`/`DbSet` as Unit of Work +
+  Repository, Fluent configs as Data Mapper, an `xmin` optimistic lock, an injected `TimeProvider`, an EF design-time
+  factory. Deliberately absent (ADR 0001): a custom Repository, Command/CQRS/MediatR, single-implementation
+  interfaces. The human approved without asking for changes.
+
+## 2026-09-18 · orch · session 1 · S0 scaffold
+
+- Created `TaskManagement.slnx` and five projects exactly as spec §1: Domain (no packages); Infrastructure (EF Core,
+  Relational, Design 10.0.12 with `PrivateAssets=all`, Npgsql EF 10.0.3); Application (Domain + Infrastructure);
+  UnitTests (Domain; Test.Sdk 17.14.1, xunit 2.9.3, runner 3.1.4); IntegrationTests (Domain, Infrastructure,
+  Application; plus Testcontainers.PostgreSql 4.15.0). The csproj files hold no TFM/Nullable/ImplicitUsings (those
+  come from `Directory.Build.props`). Template `Class1.cs`/`UnitTest1.cs` removed; `coverlet.collector` not added.
+- S0 acceptance: `dotnet build -warnaserror` → 0 Warning(s), 0 Error(s), exit 0;
+  `dotnet test --no-build --filter Category=Unit` → "No test matches …", exit 0.
+- Human instruction (mid-session): critique / grill the plan before implementation starts. Wave A is on hold until
+  that is done.

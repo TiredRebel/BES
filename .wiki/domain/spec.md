@@ -1,7 +1,7 @@
 ---
 title: Data model and contracts (N1 spec)
 type: spec
-status: draft
+status: approved
 updated: 2026-09-18
 related: ["[[employee]]", "[[task-item]]", "[[br1-completed-at]]", "[[br2-due-not-before-start]]", "[[br3-inactive-assignee]]", "[[br4-final-statuses]]", "[[br5-no-self-assignment]]", "[[decisions/index]]", "[[index]]"]
 ---
@@ -22,7 +22,7 @@ ADR: [0001](../../docs/adr/0001-solution-layout.md).
 | Project (path) | Holds | Project references | Package references |
 |---|---|---|---|
 | `src/TaskManagement.Domain/TaskManagement.Domain.csproj` | entities, enum, domain exception | none | none |
-| `src/TaskManagement.Infrastructure/TaskManagement.Infrastructure.csproj` | DbContext, Fluent configs, seed, migrations, design-time factory | Domain | `Microsoft.EntityFrameworkCore` 10.0.12; `Microsoft.EntityFrameworkCore.Relational` 10.0.12 (**pending human approval**, see below); `Microsoft.EntityFrameworkCore.Design` 10.0.12 with `<PrivateAssets>all</PrivateAssets>` and `<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>`; `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.3 |
+| `src/TaskManagement.Infrastructure/TaskManagement.Infrastructure.csproj` | DbContext, Fluent configs, seed, migrations, design-time factory | Domain | `Microsoft.EntityFrameworkCore` 10.0.12; `Microsoft.EntityFrameworkCore.Relational` 10.0.12 (approved by the human at N2, see below); `Microsoft.EntityFrameworkCore.Design` 10.0.12 with `<PrivateAssets>all</PrivateAssets>` and `<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>`; `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.3 |
 | `src/TaskManagement.Application/TaskManagement.Application.csproj` | `TaskService` (the three use cases) | Domain, Infrastructure | none (EF Core arrives transitively from Infrastructure) |
 | `tests/TaskManagement.UnitTests/TaskManagement.UnitTests.csproj` | A2: domain unit tests, `[Trait("Category", "Unit")]` | Domain | `Microsoft.NET.Test.Sdk` 17.14.1; `xunit` 2.9.3; `xunit.runner.visualstudio` 3.1.4 |
 | `tests/TaskManagement.IntegrationTests/TaskManagement.IntegrationTests.csproj` | B3: Testcontainers tests, `[Trait("Category", "Integration")]` | Domain, Infrastructure, Application | same three as UnitTests + `Testcontainers.PostgreSql` 4.15.0 |

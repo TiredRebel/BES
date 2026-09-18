@@ -1,7 +1,7 @@
 ---
 title: "BR5: a task can't be assigned to its creator"
 type: rule
-status: draft
+status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[task-item]]", "[[employee]]"]
 ---

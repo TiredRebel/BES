@@ -1,7 +1,7 @@
 ---
 title: "BR1: CompletedAt is set iff status is Completed"
 type: rule
-status: draft
+status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[task-item]]", "[[br4-final-statuses]]"]
 ---

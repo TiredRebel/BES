@@ -1,7 +1,7 @@
 ---
 title: "BR3: an inactive employee can't be given a new task"
 type: rule
-status: draft
+status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[employee]]", "[[task-item]]"]
 ---

@@ -1,7 +1,7 @@
 ---
 title: TaskItem (entity) and TaskItemStatus (enum)
 type: entity
-status: draft
+status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[employee]]", "[[br1-completed-at]]", "[[br2-due-not-before-start]]", "[[br3-inactive-assignee]]", "[[br4-final-statuses]]", "[[br5-no-self-assignment]]"]
 ---

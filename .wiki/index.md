@@ -13,8 +13,7 @@ project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikil
 
 ## Current state
 
-- Phase: **N2 human gate**. N0 and N1 are done; N2 reviewed the spec (approve with fixes) and orch applied the fixes.
-  Waiting for human approval before S0 scaffolds the solution.
+- Phase: **S0 scaffold → wave A**. N0, N1 and N2 are done; the human approved the spec and graph on 2026-09-18.
 - Resume here: read the newest entries of [[log]], then the node statuses in `plan/graph.yaml`.
 
 ## Pages
@@ -35,7 +34,7 @@ project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikil
 | [[decisions/index]] | Links to the ADRs in `docs/adr/` (0001–0008). |
 | `agents/bus/` | Message bus: one file per agent message, `<from>-to-<to>-<seq>.md` (task specs, reports, reviews). |
 
-## Solution layout (pending N2 approval; see [[spec]] §1)
+## Solution layout (approved at N2; see [[spec]] §1)
 
 `src/TaskManagement.Domain`, `src/TaskManagement.Infrastructure`, `src/TaskManagement.Application`,
 `tests/TaskManagement.UnitTests`, `tests/TaskManagement.IntegrationTests`, solution file `TaskManagement.slnx`.
