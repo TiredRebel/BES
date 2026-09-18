@@ -1,0 +1,230 @@
+# Execution graph: fan-out / fan-in DAG for the Task Management data layer.
+# The orchestrator (id: orch) changes a node's `status` only after it has checked the node's evidence itself.
+# status: pending | in_progress | blocked | done | failed
+# Acceptance commands are bash, run from the repo root, and must exit 0.
+# Paths marked `provisional: true` come from the proposed layout; N1 finalises them and the human approves them at N2.
+
+meta:
+  brief: ORCHESTRATOR_PROMPT.md
+  repo_root: "E:\\BSS TT"
+  branches:
+    main: N0 bootstrap commit only
+    feature: feature/task-management   # every later commit; D3 reviews `git diff main...feature/task-management`
+  escalation: "Fails acceptance twice -> escalate one tier once -> fails again -> stop and ask the human."
+  worker_line: "Write `[uncertain]` instead of guessing. Report 'not found' instead of inventing a path or API."
+  bus: ".wiki/agents/bus/<from>-to-<to>-<seq>.md"
+
+nodes:
+  - id: N0
+    name: Bootstrap
+    tier: orch (opus, main session)
+    depends_on: []
+    inputs: [ORCHESTRATOR_PROMPT.md]
+    outputs:
+      - .gitignore
+      - .editorconfig
+      - Directory.Build.props
+      - AGENTS.md
+      - CLAUDE.md
+      - .cursor/rules/agents.mdc
+      - .agents/rules/agents.md
+      - .wiki/index.md
+      - .wiki/log.md
+      - .wiki/codemap.md
+      - .wiki/plan/graph.yaml
+      - .wiki/domain/.gitkeep
+      - .wiki/decisions/.gitkeep
+      - .wiki/agents/bus/.gitkeep
+      - docs/adr/.gitkeep
+      - ORCHESTRATOR_PROMPT.md
+    acceptance: >-
+      git rev-parse --verify HEAD && test -f AGENTS.md && test -f CLAUDE.md && test -f .wiki/index.md
+      && test -f .wiki/plan/graph.yaml && git check-ignore -q archive-kZFEsd/
+    evidence:
+      - "`dotnet --list-sdks` output"
+      - "throwaway probe (scratchpad, not in repo) under the same props: `dotnet build -warnaserror` = 0 errors;
+        `dotnet test` = 2/2 incl. Testcontainers + EF migration + HasData on postgres:17-alpine"
+      - "`graphify update` on the probe emits C# projects, namespaces, types, members and NuGet nodes"
+      - "`git show --stat HEAD`"
+    status: in_progress
+
+  - id: N1
+    name: Architect
+    tier: opus (effort high)
+    depends_on: [N0]
+    inputs: [ORCHESTRATOR_PROMPT.md, AGENTS.md, .wiki/index.md]
+    outputs:
+      - .wiki/domain/spec.md                 # full data model + contracts that A1/A2/B1/B2/B3 code against
+      - .wiki/domain/<entity>.md             # one page per entity
+      - .wiki/domain/br1-*.md ... br5-*.md   # one page per business rule
+      - docs/adr/NNNN-*.md                   # one ADR per non-trivial decision
+      - .wiki/decisions/index.md             # links to the ADRs
+    acceptance: >-
+      test -s .wiki/domain/spec.md && ls .wiki/domain/br1-*.md .wiki/domain/br2-*.md .wiki/domain/br3-*.md
+      .wiki/domain/br4-*.md .wiki/domain/br5-*.md && ls docs/adr/0001-*.md
+    evidence:
+      - "list of files written"
+      - "every package/API/type the spec names, with where it was verified (restored package XML docs, NuGet, Learn)"
+    status: pending
+
+  - id: N2
+    name: Plan review (fresh context) + HUMAN GATE
+    tier: opus (separate subagent, effort high)
+    depends_on: [N1]
+    inputs: [ORCHESTRATOR_PROMPT.md, .wiki/domain/**, docs/adr/**, .wiki/plan/graph.yaml]
+    outputs:
+      - .wiki/agents/bus/N2-to-orch-001.md   # line-by-line check of N1 against the brief
+    acceptance: >-
+      test -s .wiki/agents/bus/N2-to-orch-001.md && grep -q "N2 approved by human" .wiki/log.md
+    evidence:
+      - "review report: invented / missing / out-of-scope items, package & API existence checks"
+      - "human approval recorded in .wiki/log.md"
+    status: pending
+
+  - id: S0
+    name: Scaffold (solution + empty projects per approved layout)
+    tier: orch
+    depends_on: [N2]
+    note: >-
+      Added by the orchestrator: A1 and A2 run in separate worktrees, so the projects both of them write into must
+      exist on the branch before fan-out. Creates the feature branch, the solution, empty projects, project
+      references and approved package references. No domain code.
+    inputs: [.wiki/domain/spec.md]
+    outputs:
+      - TaskManagement.slnx                                      # provisional: true
+      - src/TaskManagement.Domain/TaskManagement.Domain.csproj   # provisional: true
+      - src/TaskManagement.Application/TaskManagement.Application.csproj  # provisional: true
+      - src/TaskManagement.Infrastructure/TaskManagement.Infrastructure.csproj  # provisional: true
+      - tests/**/*.csproj                                        # provisional: true (N1 decides 1 or 2 test projects)
+    acceptance: "dotnet build -warnaserror"
+    evidence: ["build output", "`git show --stat HEAD`"]
+    status: pending
+
+  - id: A1
+    name: Domain
+    tier: sonnet
+    depends_on: [S0]
+    worktree: true
+    inputs: [.wiki/domain/spec.md, .wiki/domain/*.md, AGENTS.md]
+    outputs: ["src/TaskManagement.Domain/**/*.cs"]   # provisional: true; exact files listed by N1
+    do_not_touch: ["tests/**", "src/TaskManagement.Infrastructure/**", "src/TaskManagement.Application/**", "*.csproj"]
+    acceptance: >-
+      dotnet build src/TaskManagement.Domain -warnaserror
+      && ! grep -rnE '\[(Key|Required|Table|Column|MaxLength|StringLength|ForeignKey|Index|NotMapped|DatabaseGenerated|ConcurrencyCheck|Timestamp|InverseProperty|Owned|Precision|Unicode)\b' src/TaskManagement.Domain --include=*.cs
+    evidence: ["build output", "grep output (empty)", "`git diff --stat` of the worktree branch"]
+    status: pending
+
+  - id: A2
+    name: Unit tests (from the spec only, not from A1's code)
+    tier: sonnet
+    depends_on: [S0]
+    worktree: true
+    inputs: [.wiki/domain/spec.md, .wiki/domain/br*.md, AGENTS.md]
+    outputs: ["tests/<unit test project>/**/*.cs"]   # provisional: true
+    do_not_touch: ["src/**", "*.csproj"]
+    acceptance: >-
+      `git diff --stat` of the worktree branch touches only the declared outputs.
+      Compilation and pass/fail are checked at FA, because A1's code is not in A2's worktree.
+    evidence: ["`git diff --stat`", "list of tests mapped to BR1-BR5 and to each transition-table row"]
+    status: pending
+
+  - id: FA
+    name: Fan-in A
+    tier: orch
+    depends_on: [A1, A2]
+    acceptance: >-
+      dotnet build -warnaserror && dotnet test --filter Category=Unit
+    red_evidence: >-
+      For each BR, the orchestrator disables that rule's domain guard on a scratch copy and shows that the rule's
+      tests go red, then restores the guard and shows them green (failing-then-passing).
+    evidence: ["build output", "unit test output", "per-BR red/green runs", "attribute grep = 0 hits", "`git diff --stat`"]
+    commit: "feat(domain): entities, invariants and unit tests for BR1-BR5"
+    status: pending
+
+  - id: B1
+    name: Persistence (DbContext, Fluent configs, constraints, indexes, seed, initial migration)
+    tier: opus (effort high); schema work is never routed down
+    depends_on: [FA]
+    worktree: true
+    inputs: [.wiki/domain/spec.md, docs/adr/**, "src/TaskManagement.Domain/**"]
+    outputs: ["src/TaskManagement.Infrastructure/**"]   # provisional: true
+    do_not_touch: ["src/TaskManagement.Domain/**", "src/TaskManagement.Application/**", "tests/**"]
+    acceptance: >-
+      dotnet build -warnaserror
+      && dotnet ef migrations list --project src/TaskManagement.Infrastructure --no-connect
+    evidence: ["build output", "migrations list output", "the generated migration's Up() listing every constraint and index"]
+    status: pending
+
+  - id: B2
+    name: Application service (create task, change status, list by assignee; async + CancellationToken)
+    tier: sonnet
+    depends_on: [FA]
+    worktree: true
+    inputs: [.wiki/domain/spec.md, "src/TaskManagement.Domain/**"]
+    outputs: ["src/TaskManagement.Application/**"]   # provisional: true
+    do_not_touch: ["src/TaskManagement.Domain/**", "src/TaskManagement.Infrastructure/**", "tests/**"]
+    acceptance: "`git diff --stat` touches only declared outputs; compile checked at FB (depends on B1's DbContext contract from the spec)"
+    evidence: ["`git diff --stat`", "public API list"]
+    status: pending
+
+  - id: B3
+    name: Integration tests (Testcontainers)
+    tier: sonnet
+    depends_on: [FA]
+    worktree: true
+    inputs: [.wiki/domain/spec.md]
+    outputs: ["tests/<integration test project>/**/*.cs"]   # provisional: true
+    do_not_touch: ["src/**"]
+    acceptance: "`git diff --stat` touches only declared outputs; compile + pass checked at FB"
+    evidence: ["`git diff --stat`", "test list: DB rejects BR1/BR2/BR5 via raw SQL, migration applies to empty DB, seed loads, use cases"]
+    status: pending
+
+  - id: FB
+    name: Fan-in B
+    tier: orch
+    depends_on: [B1, B2, B3]
+    acceptance: >-
+      dotnet build -warnaserror
+      && dotnet ef migrations list --project src/TaskManagement.Infrastructure --no-connect
+      && dotnet test
+    extra_evidence: >-
+      `dotnet ef database update --connection <fresh postgres:17-alpine container>` exits 0, and `\d` of the tasks
+      table shows the check constraints and indexes. Per-BR red evidence for the DB constraints: violating raw SQL
+      is rejected with the named constraint.
+    commit: "feat(persistence): EF Core schema, migration, seed, application service and integration tests"
+    status: pending
+
+  - id: D1
+    name: Docs + wiki
+    tier: haiku (template-driven, fixed output shape)
+    depends_on: [FB]
+    outputs: [README.md, ".wiki/domain/*.md (code links)", .wiki/decisions/index.md, .wiki/index.md]
+    acceptance: "every [[wikilink]] resolves to a file under .wiki/ and every code path cited in .wiki/ and README.md exists"
+    status: pending
+
+  - id: D2
+    name: Codemap
+    tier: haiku (via graphify)
+    depends_on: [FB]
+    outputs: [.wiki/codemap.md]
+    acceptance: >-
+      graphify update . && test -s .wiki/codemap.md && grep -q '```mermaid' .wiki/codemap.md
+    status: pending
+
+  - id: D3
+    name: Review
+    tier: opus
+    depends_on: [D1, D2]
+    agents: [pr-review-toolkit:code-reviewer, pr-review-toolkit:comment-analyzer, pr-review-toolkit:type-design-analyzer, pr-review-toolkit:silent-failure-hunter, pr-review-toolkit:pr-test-analyzer]
+    inputs: ["git diff main...feature/task-management", "build + test output files"]   # never agent summaries
+    outputs: [".wiki/agents/bus/D3-to-orch-*.md"]
+    acceptance: "one report per reviewer exists; each finding marked confirmed / rejected by orch with evidence"
+    status: pending
+
+  - id: D4
+    name: Fix loop (confirmed findings only), then re-run D3 once
+    tier: per finding (schema -> opus)
+    depends_on: [D3]
+    acceptance: "dotnet build -warnaserror && dotnet test"
+    commit: "fix: address confirmed review findings"
+    status: pending

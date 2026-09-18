@@ -1,0 +1,5 @@
+---
+description: Project instructions live in AGENTS.md at the repo root
+alwaysApply: true
+---
+Read and follow `AGENTS.md` at the repo root. It is the single canonical instruction file; this rule only points to it.
