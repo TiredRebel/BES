@@ -1,0 +1,4 @@
+# Codex loads this project-scoped config only when the project is trusted.
+[mcp_servers.codegraph]
+command = "codegraph"
+args = ["serve", "--mcp"]

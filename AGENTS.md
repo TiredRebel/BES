@@ -68,10 +68,20 @@ dotnet test                                   # all tests; integration tests nee
 dotnet ef migrations add <Name> --project src/TaskManagement.Infrastructure
 dotnet ef migrations list --project src/TaskManagement.Infrastructure --no-connect
 dotnet ef database update --project src/TaskManagement.Infrastructure --connection "<connection string>"
-graphify update .                             # refresh the code graph, then summarise it into .wiki/codemap.md
+codegraph sync .                              # refresh the code graph index after code changes
 ```
 
 Project paths are provisional until the architecture spec is approved; `.wiki/index.md` has the current layout.
+
+## Code graph
+
+This repo's code graph tool is **CodeGraph** (`@colbymchenry/codegraph` 1.6.0, CLI `codegraph`). It replaces any
+user-level graphify instructions here. The index lives in `.codegraph/` (machine-local, gitignored by its own
+`.gitignore`); rebuild it with `codegraph init -y` on a fresh clone. The MCP server (`codegraph serve --mcp`) is wired
+project-scoped in `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor) and `.codex/config.toml` (Codex, trusted
+projects only). For symbol questions, use `codegraph query <name>`, `codegraph callers <symbol>`,
+`codegraph impact <symbol>` or the `codegraph_explore` MCP tool. After each fan-in, the code map summary in
+`.wiki/codemap.md` is regenerated from CodeGraph.
 
 ## Workflow
 

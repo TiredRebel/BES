@@ -484,5 +484,3 @@ $RECYCLE.BIN/
 # Repo-local extras
 # Stray GitKraken CLI download found in the folder before bootstrap; not part of the project.
 archive-kZFEsd/
-# graphify build output; the committed summary lives in .wiki/codemap.md (regenerate with `graphify update .`).
-graphify-out/

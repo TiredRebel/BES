@@ -37,6 +37,10 @@ nodes:
       - .wiki/agents/bus/.gitkeep
       - docs/adr/.gitkeep
       - ORCHESTRATOR_PROMPT.md
+      - .codegraph/.gitignore
+      - .mcp.json
+      - .cursor/mcp.json
+      - .codex/config.toml
     acceptance: >-
       git rev-parse --verify HEAD && test -f AGENTS.md && test -f CLAUDE.md && test -f .wiki/index.md
       && test -f .wiki/plan/graph.yaml && git check-ignore -q archive-kZFEsd/
@@ -44,7 +48,8 @@ nodes:
       - "`dotnet --list-sdks` output"
       - "throwaway probe (scratchpad, not in repo) under the same props: `dotnet build -warnaserror` = 0 errors;
         `dotnet test` = 2/2 incl. Testcontainers + EF migration + HasData on postgres:17-alpine"
-      - "`graphify update` on the probe emits C# projects, namespaces, types, members and NuGet nodes"
+      - "`codegraph init -y` on the probe indexes C# (8 files, 66 nodes: class/method/property/namespace/import)"
+      - "`codegraph serve --mcp` answers initialize + tools/list (codegraph_explore) in the repo"
       - "`git show --stat HEAD`"
     status: in_progress
 
@@ -138,6 +143,7 @@ nodes:
       For each BR, the orchestrator disables that rule's domain guard on a scratch copy and shows that the rule's
       tests go red, then restores the guard and shows them green (failing-then-passing).
     evidence: ["build output", "unit test output", "per-BR red/green runs", "attribute grep = 0 hits", "`git diff --stat`"]
+    codemap: "`codegraph sync .`, then haiku refreshes .wiki/codemap.md from `codegraph files` / `codegraph query` output"
     commit: "feat(domain): entities, invariants and unit tests for BR1-BR5"
     status: pending
 
@@ -191,6 +197,7 @@ nodes:
       `dotnet ef database update --connection <fresh postgres:17-alpine container>` exits 0, and `\d` of the tasks
       table shows the check constraints and indexes. Per-BR red evidence for the DB constraints: violating raw SQL
       is rejected with the named constraint.
+    codemap: "`codegraph sync .`, then haiku refreshes .wiki/codemap.md from `codegraph files` / `codegraph query` output"
     commit: "feat(persistence): EF Core schema, migration, seed, application service and integration tests"
     status: pending
 
@@ -204,11 +211,11 @@ nodes:
 
   - id: D2
     name: Codemap
-    tier: haiku (via graphify)
+    tier: haiku (via CodeGraph CLI)
     depends_on: [FB]
     outputs: [.wiki/codemap.md]
     acceptance: >-
-      graphify update . && test -s .wiki/codemap.md && grep -q '```mermaid' .wiki/codemap.md
+      codegraph sync . && codegraph status . && test -s .wiki/codemap.md && grep -q '```mermaid' .wiki/codemap.md
     status: pending
 
   - id: D3

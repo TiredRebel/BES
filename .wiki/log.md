@@ -41,3 +41,25 @@ Newest entry at the bottom.
 - Note: the graphify CLI warns that its installed skill (0.9.32) is older than its package (0.9.46). Left alone;
   fixing it would change user config outside the repo.
 - Commit: see next entry.
+
+## 2026-09-18 · orch (claude-opus-5) · session 1 · N0 correction: CodeGraph replaces graphify
+
+- Previous commit: N0 bootstrap = `0dac119`.
+- Human finding: N0 used graphify, but the machine has **CodeGraph** installed and that is the code-graph tool to use.
+  Root cause: the N0 code-graph check probed only for graphify and missed the global npm package
+  `@colbymchenry/codegraph` 1.6.0 (`codegraph` CLI + MCP server).
+- Fix, verified against `codegraph --help` / `codegraph help <cmd>` and `codegraph install --print-config <agent>`:
+  - `codegraph init -y` in the repo → `.codegraph/` (its own `.gitignore` ignores the SQLite index; only that file is
+    committed).
+  - Project-scoped MCP server `codegraph serve --mcp` wired for Claude Code (`.mcp.json`), Cursor
+    (`.cursor/mcp.json`, with `--path ${workspaceFolder}`, per cursor.com/docs/context/mcp) and Codex
+    (`.codex/config.toml`, loaded for trusted projects only, per the Codex MCP docs).
+  - Antigravity: **[uncertain]** CodeGraph prints only a global target (`~/.gemini/config/mcp_config.json`); no
+    project-scoped MCP file is documented, so nothing was written outside the repo.
+  - graphify removed from the repo: `.gitignore`, `AGENTS.md` (now has a "Code graph" section), `graph.yaml`
+    (N0 evidence, FA/FB codemap step, D2), `.wiki/codemap.md`. The N0 entry above stays as history.
+    graphify is still installed on the machine and in the user-level `~/.claude/CLAUDE.md`, both outside the repo;
+    I've asked the human whether to remove those.
+- Validation: on the probe, `codegraph init -y` → 8 C# files, 66 nodes (class 8, method 11, property 5, namespace 8,
+  import 26), `codegraph query Employee` resolves class + ctor + file. In the repo: `codegraph status` → "Index is up
+  to date"; an MCP stdio handshake → `initialize` = `codegraph 1.6.0`, `tools/list` = `codegraph_explore`.
