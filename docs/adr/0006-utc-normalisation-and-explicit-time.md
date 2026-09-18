@@ -1,6 +1,6 @@
 # 0006. Timestamps: normalise to UTC in the domain; time comes from TimeProvider
 
-Status: proposed (N1, 2026-09-18). Awaiting the N2 human gate.
+Status: accepted (human, N2 gate, 2026-09-18).
 
 ## Context
 

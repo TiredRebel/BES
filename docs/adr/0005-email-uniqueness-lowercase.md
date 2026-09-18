@@ -1,6 +1,6 @@
 # 0005. E-mail uniqueness is case-insensitive through lowercase normalisation
 
-Status: proposed (N1, 2026-09-18). Awaiting the N2 human gate (open question 2).
+Status: accepted (human, N2 gate, 2026-09-18; open question 2 answered: lowercase in the domain).
 
 ## Context
 

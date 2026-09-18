@@ -1,6 +1,6 @@
 # 0001. Solution layout: three source projects, two test projects
 
-Status: proposed (N1, 2026-09-18). Awaiting the N2 human gate.
+Status: accepted (human, N2 gate, 2026-09-18).
 
 ## Context
 

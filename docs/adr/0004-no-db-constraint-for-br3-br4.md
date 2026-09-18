@@ -1,6 +1,8 @@
 # 0004. BR3 and BR4 have no database constraint
 
-Status: proposed (N1, 2026-09-18). Awaiting the N2 human gate.
+Status: superseded by [ADR 0009](0009-br3-br4-enforced-by-trigger.md) (human, pre-implementation grill,
+2026-09-18). The `xmin` concurrency-token decision below stays in force; the "no DB constraint for BR3/BR4"
+decision does not.
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0008. One domain exception for business-rule violations
 
-Status: proposed (N1, 2026-09-18). Awaiting the N2 human gate.
+Status: accepted (human, N2 gate, 2026-09-18).
 
 ## Context
 
@@ -20,6 +20,11 @@ is disabled.
 - Tests assert `RuleId`, never message text.
 - CA1032 (standard exception constructors) is not enabled under `latest-recommended`, so the single constructor
   builds.
+
+Amendment (human, pre-implementation grill Q4 b, 2026-09-18): a second constructor
+`(string ruleId, string message, Exception innerException)` lets `TaskService.CreateTaskAsync` rethrow the database
+trigger's BR3 rejection as this exception, with the original `DbUpdateException` as `InnerException`
+([ADR 0009](0009-br3-br4-enforced-by-trigger.md)).
 
 ## Consequences
 

@@ -8,12 +8,17 @@ related: ["[[log]]", "[[codemap]]", "[[spec]]", "[[decisions/index]]"]
 
 # Task Management data layer: wiki index
 
+Task Management is the internal CRM module for assigning, executing and controlling employees' tasks. This repo is
+its data layer (PostgreSQL + EF Core).
+
 Read this page first in every session. Instructions for agents live in `AGENTS.md`; this wiki holds the
 project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikilinks]]`, so Obsidian can open it.
 
 ## Current state
 
-- Phase: **S0 scaffold → wave A**. N0, N1 and N2 are done; the human approved the spec and graph on 2026-09-18.
+- Phase: **wave A** (A1 domain ∥ A2 unit tests). N0, N1, N2 and S0 are done. The human approved the spec at the N2
+  gate and four more decisions at the pre-implementation grill (BR3/BR4 trigger, status filter, seed stays in
+  `InitialCreate` as demo data, BR3 trigger error translated to the domain exception); see [[log]].
 - Resume here: read the newest entries of [[log]], then the node statuses in `plan/graph.yaml`.
 
 ## Pages
@@ -31,7 +36,7 @@ project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikil
 | [[br3-inactive-assignee]] | BR3: an inactive employee cannot be given a new task. |
 | [[br4-final-statuses]] | BR4: `Completed` and `Cancelled` are final. |
 | [[br5-no-self-assignment]] | BR5: assignee ≠ creator. |
-| [[decisions/index]] | Links to the ADRs in `docs/adr/` (0001–0008). |
+| [[decisions/index]] | Links to the ADRs in `docs/adr/` (0001–0009; 0009 supersedes 0004). |
 | `agents/bus/` | Message bus: one file per agent message, `<from>-to-<to>-<seq>.md` (task specs, reports, reviews). |
 
 ## Solution layout (approved at N2; see [[spec]] §1)

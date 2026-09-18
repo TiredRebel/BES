@@ -8,7 +8,8 @@ the execution graph (`.wiki/plan/graph.yaml`, with each node's status) and the s
 
 ## What this repo is
 
-The data layer of an internal CRM **Task Management** module: PostgreSQL + EF Core.
+The data layer of **Task Management**, the internal CRM module for assigning, executing and controlling employees'
+tasks: PostgreSQL + EF Core.
 Covers employees, tasks, task assignment, deadlines and statuses, enforcing business rules BR1–BR5
 (defined in `.wiki/domain/`). Scope is backend/data only: domain, persistence, an application service, tests.
 A web API, UI or server host is out of scope.

@@ -132,3 +132,33 @@ Newest entry at the bottom.
   `dotnet test --no-build --filter Category=Unit` → "No test matches …", exit 0.
 - Human instruction (mid-session): critique / grill the plan before implementation starts. Wave A is on hold until
   that is done.
+
+## 2026-09-18 · human + orch · session 1 · pre-implementation critique and grill
+
+- Previous commit: S0 scaffold = `f55b798`.
+- Critique (orch) of the approved plan. High: BR3/BR4 enforced in code only. Medium: the `(assignee_id, status)` index
+  had no query using its status column; the demo seed ships inside `InitialCreate`. Accepted as-is: no `CreatedAt`,
+  `Version` on the entity, the service returns entities, A2/B2/B3 compile only at fan-in.
+- Facts checked by orch before the questions:
+  - trigger SQL in a throwaway `postgres:17-alpine`: BR3 → `23514` / `trg_tasks_br3_assignee_active`; BR4 → `23514` /
+    `trg_tasks_br4_final_status`; an unknown assignee → `23503` / `fk_tasks_employees_assignee_id` (trigger reads
+    `is_active` and raises only when it IS FALSE); updates of other columns on a final task are accepted; the Down()
+    drop order works;
+  - `UseAsyncSeeding` and `MigrationBuilder.Sql(string, bool)` exist in the EF 10.0.12 XML docs;
+  - benchmark (spec schema, 1,000 employees): single-row insert ×20,000 2,033 → 2,453 ms (+21 µs/row; +11 µs without
+    `FOR SHARE`), status update ×20,000 818 → 901 ms (+4 µs/row), bulk insert 200,000 rows 7.5 → 12.2 s (+61%).
+- Human decisions:
+  - Q1 (b): BR3/BR4 trigger `trg_tasks_br3_br4` (`BEFORE INSERT OR UPDATE OF status`, `FOR SHARE` on the assignee),
+    created by `migrationBuilder.Sql` in `InitialCreate`. New ADR 0009 supersedes ADR 0004 (the `xmin` token stays).
+  - Q2 yes: `ListTasksByAssigneeAsync(Guid assigneeId, TaskItemStatus? status = null, CancellationToken …)`.
+  - Q3 (a): seed stays as `HasData` in `InitialCreate`; the README gets a `## Seed data` section saying it is demo data.
+  - Q4 (b): `CreateTaskAsync` rethrows the trigger's BR3 rejection as `BusinessRuleViolationException("BR3", …, inner)`;
+    the exception gets a `(ruleId, message, innerException)` constructor (ADR 0008 amended).
+  - Human reminder: the module is the internal CRM module for assigning, executing and controlling employees' tasks.
+    Added to `AGENTS.md`, `.wiki/index.md` and the spec intro, where a table maps assigning / executing / controlling
+    onto the three use cases.
+- Files changed: spec §intro, §3.4, §5, §8, §11 (trigger SQL + how B1 adds it), §12 (demo seed note), §14, §15 (6 new
+  tests, mapping, red evidence), §16; ADR 0009 (new); ADRs 0001–0008 statuses (accepted; 0004 superseded); ADR 0008
+  amendment; BR3 and BR4 pages; decisions index; graph.yaml (B1 acceptance greps the trigger, D1 acceptance requires
+  `## Seed data` + "demo data"; A1, A2 in progress).
+- Shared understanding confirmed by the human ("Q4 b, confirmed"). Wave A starts next.

@@ -1,6 +1,6 @@
 # 0002. Assignment is a column on the task, not a TaskAssignment history table
 
-Status: proposed (N1, 2026-09-18). Awaiting the N2 human gate.
+Status: accepted (human, N2 gate, 2026-09-18).
 
 ## Context
 

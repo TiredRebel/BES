@@ -126,7 +126,7 @@ nodes:
       dotnet build src/TaskManagement.Domain -warnaserror
       && ! grep -rnE '\[(Key|Required|Table|Column|MaxLength|StringLength|ForeignKey|Index|NotMapped|DatabaseGenerated|ConcurrencyCheck|Timestamp|InverseProperty|Owned|Precision|Unicode)\b' src/TaskManagement.Domain --include=*.cs
     evidence: ["build output", "grep output (empty)", "`git diff --stat` of the worktree branch"]
-    status: pending
+    status: in_progress
 
   - id: A2
     name: Unit tests (from the spec only, not from A1's code)
@@ -144,7 +144,7 @@ nodes:
       `git diff --stat` of the worktree branch touches only the declared outputs.
       Compilation and pass/fail are checked at FA, because A1's code is not in A2's worktree.
     evidence: ["`git diff --stat`", "list of tests mapped to BR1-BR5 and to each transition-table row"]
-    status: pending
+    status: in_progress
 
   - id: FA
     name: Fan-in A
@@ -179,7 +179,9 @@ nodes:
     acceptance: >-
       dotnet build -warnaserror
       && dotnet ef migrations list --project src/TaskManagement.Infrastructure --no-connect
-    evidence: ["build output", "migrations list output", "the generated migration's Up() listing every constraint and index"]
+      && grep -q "CREATE TRIGGER trg_tasks_br3_br4" src/TaskManagement.Infrastructure/Migrations/*_InitialCreate.cs
+      && grep -q "DROP FUNCTION IF EXISTS tasks_enforce_br3_br4" src/TaskManagement.Infrastructure/Migrations/*_InitialCreate.cs
+    evidence: ["build output", "migrations list output", "the generated migration's Up() listing every constraint, index and the trigger"]
     status: pending
 
   - id: B2
@@ -235,9 +237,10 @@ nodes:
     outputs: [README.md, ".wiki/domain/*.md (code links)", .wiki/decisions/index.md, .wiki/index.md]
     acceptance: >-
       every [[wikilink]] and relative link in .wiki/, docs/adr/ and README.md resolves (orch's link checker exits 0)
-      && for h in '## Prerequisites' '## Migrations' '## Tests' '## Where each business rule is enforced'; do grep -qF "$h" README.md || exit 1; done
+      && for h in '## Prerequisites' '## Migrations' '## Tests' '## Where each business rule is enforced' '## Seed data'; do grep -qF "$h" README.md || exit 1; done
+      && grep -qi 'demo data' README.md
       && for b in BR1 BR2 BR3 BR4 BR5; do grep -qE "^\| *$b " README.md || exit 1; done
-    readme_must_have: [prerequisites, how to run migrations, how to run tests, where each BR is enforced, BR1-BR5 -> failing-then-passing test table]
+    readme_must_have: [module purpose (assigning, executing, controlling employees' tasks), prerequisites, how to run migrations, how to run tests, where each BR is enforced, BR1-BR5 -> failing-then-passing test table, seed data is demo data (grill Q3)]
     status: pending
 
   - id: D2
