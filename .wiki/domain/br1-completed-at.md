@@ -8,7 +8,7 @@ related: ["[[spec]]", "[[task-item]]", "[[br4-final-statuses]]"]
 
 # BR1: `CompletedAt` is required when, and only when, status = `Completed`
 
-| Layer | Where (domain: implemented at fan-in A; other layers: planned for wave B) | How |
+| Layer | Where (implemented: domain at fan-in A, database and service at fan-in B) | How |
 |---|---|---|
 | Domain | `TaskItem.Create`, `TaskItem.ChangeStatus` in `src/TaskManagement.Domain/TaskItem.cs` | Structural: `Create` sets `CompletedAt = null`; `ChangeStatus` sets `CompletedAt = changedAt.ToUniversalTime()` when the new status is `Completed` and `null` otherwise. No setter is public, so the API cannot express a violation and nothing throws. BR4 keeps a final task's value frozen. |
 | Database | `ck_tasks_br1_completed_at_iff_completed` on `tasks` | `(status = 'Completed' AND completed_at IS NOT NULL) OR (status <> 'Completed' AND completed_at IS NULL)` → SqlState `23514` |

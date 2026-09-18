@@ -223,3 +223,35 @@ Newest entry at the bottom.
 - Wave B: B1, B2 and B3 all stopped on an API rate limit (HTTP 429, session limit). B1 and B2 were resumed with their
   context and their uncommitted worktree files; B3's worktree had been auto-removed (no changes yet), so B3 was
   restarted fresh with an instruction to commit early.
+
+## 2026-09-18 · orch + B1 (opus) + B2 (sonnet) + B3 (sonnet) + codemap (haiku) · session 1 · fan-in B
+
+- Previous commit: context-loss hook = `71ea20e`.
+- Merged: B1 (branch `worktree-agent-a00e9052f06739657`, commit 0f7da28) squash-merged; B2 (`…a0033f50f087cee5d`,
+  77d1a9f + 9441229) and B3 retry (`…a76f8e00527b8c25a`, 463a5d1 + a7b8a4a) taken with `git checkout <branch> -- <paths>`,
+  because git refused a second squash merge onto the staged index (the B branches were based on d831657, before the
+  hook commit). Scope: each branch touched only its declared outputs + report (`git diff --name-only d831657 <branch>`).
+- B1 facts from the generated `Up()`: (a) `status` is `character varying(20)`; (b) seed statuses are strings;
+  (c) employees inserted before tasks; (d) no default `IX_` index. B1 also applied Up() and Down() to a container.
+- Pre-check in a scratch worktree: B1 + B2 built with 0 warnings / 0 errors. First full run: 54/54 unit, 33/34
+  integration. The failure, `Delete_EmployeeWithTasks_RejectedByRestrictForeignKey`, expected `…creator_id`, but
+  PostgreSQL reported `fk_tasks_employees_assignee_id`. Spec §15 allows either FK (Bob is creator and assignee), so the
+  test was stricter than the spec. orch fixed the assertion to accept either (one-line test change, within spec).
+- Fan-in B gates (main tree): `dotnet build -warnaserror` → 0 Warning(s), 0 Error(s); `dotnet ef migrations list
+  --no-connect` → `20260918164447_InitialCreate`, exit 0; attribute gate → exit 0; `dotnet test` → unit 54/54,
+  integration 34/34, exit 0. `dotnet ef database update --connection <fresh postgres:17-alpine>` → "Applying migration
+  '20260918164447_InitialCreate'. Done.", exit 0; `\d tasks` shows exactly the §10–§11 columns, pk, 3 named indexes,
+  4 CHECKs, 2 RESTRICT FKs and trigger `trg_tasks_br3_br4`; 3 employees, 3 tasks.
+- Failing-then-passing at the DB and service level (each removed on the merged tree, integration tests run, file
+  restored byte-for-byte): BR1 CHECK dropped → 3 BR1 DB tests + schema test red; BR2 CHECK → BR2 DB test + schema
+  red; BR5 CHECK → BR5 DB test + schema red; trigger not created → BR3 trigger, BR4 trigger, race test + schema red;
+  service BR3 check removed → only `CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck`
+  red; trigger-error translation removed → only `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger`
+  red. No build errors in any mutation.
+- B1's resolved open items: `ExecuteSqlRawAsync` surfaces `PostgresException` unwrapped, and EF returns the tracked,
+  stale `Employee` in the race test (both proven by the passing tests). CA1001 did not fire on the fixture.
+- Code map: `codegraph sync .` → 21 files, 280 nodes, 552 edges. The haiku agent rewrote `.wiki/codemap.md`; orch
+  removed one invented edge (`DatabaseConstraintTests → TaskService`: 0 references by grep), added the missing
+  `EmployeeTests → Employee`, `TaskItemCreateTests → TaskItem` and fixture/DbContext edges, and pointed the dashed
+  project edges at existing subgraphs.
+- Wiki: entity and BR pages mark the database and service layers implemented. graph.yaml: B1, B2, B3, FB done.

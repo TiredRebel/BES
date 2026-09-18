@@ -13,7 +13,7 @@ A unit of work created by one employee and assigned to another. Named `TaskItem`
 
 - Code: `src/TaskManagement.Domain/TaskItem.cs`, `TaskItemStatus.cs`, `BusinessRuleViolationException.cs`
   (implemented at fan-in A; tests in `tests/TaskManagement.UnitTests/TaskItemCreateTests.cs` and
-  `TaskItemChangeStatusTests.cs`). Planned for wave B: mapping in `src/TaskManagement.Infrastructure/Configurations/TaskItemConfiguration.cs`;
+  `TaskItemChangeStatusTests.cs`). Implemented at fan-in B: mapping in `src/TaskManagement.Infrastructure/Configurations/TaskItemConfiguration.cs`;
   use cases in `src/TaskManagement.Application/TaskService.cs`.
 - Table: `tasks`, PK `pk_tasks`.
 

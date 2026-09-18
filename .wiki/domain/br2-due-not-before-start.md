@@ -10,7 +10,7 @@ related: ["[[spec]]", "[[task-item]]"]
 
 Both dates are nullable. The rule applies only when both are set; equal is allowed.
 
-| Layer | Where (domain: implemented at fan-in A; other layers: planned for wave B) | How |
+| Layer | Where (implemented: domain at fan-in A, database and service at fan-in B) | How |
 |---|---|---|
 | Domain | `TaskItem.Create` (guard 7) in `src/TaskManagement.Domain/TaskItem.cs` | after UTC normalisation, `dueAt < plannedStartAt` → `BusinessRuleViolationException` with `RuleId == "BR2"` |
 | Database | `ck_tasks_br2_due_at_not_before_planned_start_at` on `tasks` | `planned_start_at IS NULL OR due_at IS NULL OR due_at >= planned_start_at` → SqlState `23514` |

@@ -12,11 +12,11 @@ related: ["[[spec]]", "[[employee]]", "[[task-item]]"]
 `AssigneeId` is set (no reassignment), so BR3 is checked at creation, in two places as the brief requires.
 The creator's status is not checked, and tasks an employee already had before deactivation stay valid.
 
-| Layer | Where (domain: implemented at fan-in A; other layers: planned for wave B) | How |
+| Layer | Where (implemented: domain at fan-in A, database and service at fan-in B) | How |
 |---|---|---|
 | Application | `TaskService.CreateTaskAsync` in `src/TaskManagement.Application/TaskService.cs` | loads the assignee row, `!IsActive` → `BusinessRuleViolationException` (`RuleId == "BR3"`) before calling the domain |
 | Domain | `TaskItem.Create` (guard 6) | `!assignee.IsActive` → same exception, so no caller can skip it |
-| Database | trigger `trg_tasks_br3_br4` on insert (planned, in `InitialCreate`) | reads the assignee's `is_active` under `FOR SHARE`; an inactive assignee → `23514` / `trg_tasks_br3_assignee_active`; the service rethrows it as `BusinessRuleViolationException("BR3")` ([ADR 0009](../../docs/adr/0009-br3-br4-enforced-by-trigger.md)) |
+| Database | trigger `trg_tasks_br3_br4` on insert (in `src/TaskManagement.Infrastructure/Migrations/20260918164447_InitialCreate.cs`) | reads the assignee's `is_active` under `FOR SHARE`; an inactive assignee → `23514` / `trg_tasks_br3_assignee_active`; the service rethrows it as `BusinessRuleViolationException("BR3")` ([ADR 0009](../../docs/adr/0009-br3-br4-enforced-by-trigger.md)) |
 
 The trigger's `FOR SHARE` lock closes the race between the service's read and its insert: a concurrent deactivation
 waits for the insert, and a deactivation committed before it makes the insert fail as BR3.
