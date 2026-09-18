@@ -126,7 +126,7 @@ nodes:
       dotnet build src/TaskManagement.Domain -warnaserror
       && ! grep -rnE '\[(Key|Required|Table|Column|MaxLength|StringLength|ForeignKey|Index|NotMapped|DatabaseGenerated|ConcurrencyCheck|Timestamp|InverseProperty|Owned|Precision|Unicode)\b' src/TaskManagement.Domain --include=*.cs
     evidence: ["build output", "grep output (empty)", "`git diff --stat` of the worktree branch"]
-    status: in_progress
+    status: done
 
   - id: A2
     name: Unit tests (from the spec only, not from A1's code)
@@ -144,7 +144,7 @@ nodes:
       `git diff --stat` of the worktree branch touches only the declared outputs.
       Compilation and pass/fail are checked at FA, because A1's code is not in A2's worktree.
     evidence: ["`git diff --stat`", "list of tests mapped to BR1-BR5 and to each transition-table row"]
-    status: in_progress
+    status: done
 
   - id: FA
     name: Fan-in A
@@ -158,7 +158,7 @@ nodes:
     evidence: ["build output", "unit test output", "per-BR red/green runs", "attribute grep = 0 hits", "`git diff --stat`"]
     codemap: "`codegraph sync .`, then haiku refreshes .wiki/codemap.md from `codegraph files` / `codegraph query` output"
     commit: "feat(domain): entities, invariants and unit tests for BR1-BR5"
-    status: pending
+    status: done
 
   - id: B1
     name: Persistence (DbContext, Fluent configs, constraints, indexes, seed, initial migration)

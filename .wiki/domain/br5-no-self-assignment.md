@@ -10,7 +10,7 @@ related: ["[[spec]]", "[[task-item]]", "[[employee]]"]
 
 Decided in the brief: this is the meaning of "assigned to oneself".
 
-| Layer | Where (planned) | How |
+| Layer | Where (domain: implemented at fan-in A; other layers: planned for wave B) | How |
 |---|---|---|
 | Domain | `TaskItem.Create` (guard 5) in `src/TaskManagement.Domain/TaskItem.cs` | `creator.Id == assignee.Id` → `BusinessRuleViolationException` (`RuleId == "BR5"`) |
 | Database | `ck_tasks_br5_assignee_not_creator` on `tasks` | `assignee_id <> creator_id` → SqlState `23514` |

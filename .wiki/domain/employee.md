@@ -10,7 +10,8 @@ related: ["[[spec]]", "[[task-item]]", "[[br3-inactive-assignee]]", "[[br5-no-se
 
 A person who creates tasks and is assigned tasks. Full contract: [[spec]] §3.1, §10, §12.
 
-- Code (planned): `src/TaskManagement.Domain/Employee.cs`, mapping in
+- Code: `src/TaskManagement.Domain/Employee.cs` (implemented at fan-in A; tests in
+  `tests/TaskManagement.UnitTests/EmployeeTests.cs`). Mapping (planned, wave B):
   `src/TaskManagement.Infrastructure/Configurations/EmployeeConfiguration.cs`.
 - Table: `employees` (`id uuid`, `full_name varchar(200)`, `email varchar(254)`, `is_active boolean`), PK
   `pk_employees`, unique index `ux_employees_email`.

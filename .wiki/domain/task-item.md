@@ -11,8 +11,9 @@ related: ["[[spec]]", "[[employee]]", "[[br1-completed-at]]", "[[br2-due-not-bef
 A unit of work created by one employee and assigned to another. Named `TaskItem` (not `Task`) and its status enum
 `TaskItemStatus` (not `TaskStatus`) to avoid `System.Threading.Tasks`. Full contract: [[spec]] §3.2–§3.4, §5, §10–§12.
 
-- Code (planned): `src/TaskManagement.Domain/TaskItem.cs`, `TaskItemStatus.cs`,
-  `BusinessRuleViolationException.cs`; mapping in `src/TaskManagement.Infrastructure/Configurations/TaskItemConfiguration.cs`;
+- Code: `src/TaskManagement.Domain/TaskItem.cs`, `TaskItemStatus.cs`, `BusinessRuleViolationException.cs`
+  (implemented at fan-in A; tests in `tests/TaskManagement.UnitTests/TaskItemCreateTests.cs` and
+  `TaskItemChangeStatusTests.cs`). Planned for wave B: mapping in `src/TaskManagement.Infrastructure/Configurations/TaskItemConfiguration.cs`;
   use cases in `src/TaskManagement.Application/TaskService.cs`.
 - Table: `tasks`, PK `pk_tasks`.
 

@@ -484,3 +484,5 @@ $RECYCLE.BIN/
 # Repo-local extras
 # Stray GitKraken CLI download found in the folder before bootstrap; not part of the project.
 archive-kZFEsd/
+# Claude Code agent worktrees (wave fan-outs); merged back by the orchestrator, never committed as folders.
+.claude/worktrees/

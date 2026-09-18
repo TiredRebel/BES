@@ -169,3 +169,30 @@ Newest entry at the bottom.
 - Task specs `agents/bus/orch-to-A1-001.md` (domain) and `orch-to-A2-001.md` (unit tests, from the spec only)
   committed so both worktrees contain them. A1 and A2 run as parallel sonnet subagents, each in its own git worktree,
   and each loads `ponytail:ponytail` first.
+
+## 2026-09-18 · orch + A1 (sonnet) + A2 (sonnet) + codemap (haiku) · session 1 · fan-in A
+
+- Previous commit: wave A task specs = `a6b3933`.
+- A1 (worktree branch `worktree-agent-a61dc97863a0f8a63`, commits d1a406a, 3d9ef4d, e759ad0): `Employee`, `TaskItem`,
+  `TaskItemStatus`, `BusinessRuleViolationException` (both constructors). A2 (branch
+  `worktree-agent-ab046b2aed9af8b7f`, commit 9a4a31f): `EmployeeTests`, `TaskItemCreateTests`,
+  `TaskItemChangeStatusTests`, written from the spec only; A2 compile-checked them against a signatures-only stub
+  outside the repo (0 errors). Both branches squash-merged here as one commit. A1's open question (who writes
+  log.md for worktree commits) is answered by this entry: orch logs at fan-in.
+- Scope: `git diff --name-only a6b3933 <branch>` → A1 only its 4 domain files + report; A2 only its 3 test files + report.
+- Red (tests before code): A2 squash-merged alone → `dotnet build -warnaserror` exit 1 with only missing-symbol errors
+  (64× CS0103, 6× CS0234, 10× CS0246).
+- Green: A1 added → `dotnet build -warnaserror` 0 Error(s), exit 0; `dotnet test --filter Category=Unit` →
+  "Passed! Failed: 0, Passed: 54" (34 methods; 5 theories expand to 25 rows), exit 0.
+- Attribute gate on `src/TaskManagement.Domain`: 0 hits, exit 0.
+- Per-BR failing-then-passing (guard disabled in `TaskItem.cs`, unit tests run, file restored byte-for-byte):
+  BR5 → 1 red (`Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5`); BR3 → 1 red
+  (`Create_InactiveAssignee_ThrowsBusinessRuleViolationBR3`); BR2 → 2 red (`Create_DueAtBeforePlannedStartAt_…BR2`,
+  `…AfterUtcConversion_…BR2`); BR4 → 9 red (8 disallowed transition rows + `ChangeStatus_FromCompleted_…`);
+  BR1 (`CompletedAt` assignment removed) → 5 red. No build errors in any mutation. Green again after restore: 54/54.
+- Code map: `codegraph sync .` → 8 files, 92 nodes, 208 edges (7 C# files; the agent worktrees are excluded via
+  `.gitignore`). A haiku agent wrote `.wiki/codemap.md` from CodeGraph output; orch fixed two defects (test counts
+  19/7 → 16/5, counted with `grep -c '[Fact]|[Theory]'`; a stray `end` inside the Mermaid block) and added the
+  `TaskItem → Employee` edge.
+- `.gitignore`: `.claude/worktrees/` (agent worktrees live inside the repo folder).
+- Entity and BR pages: the domain layer is marked implemented. graph.yaml: A1, A2, FA done.

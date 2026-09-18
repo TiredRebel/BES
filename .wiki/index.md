@@ -16,7 +16,8 @@ project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikil
 
 ## Current state
 
-- Phase: **wave A** (A1 domain ∥ A2 unit tests). N0, N1, N2 and S0 are done. The human approved the spec at the N2
+- Phase: **wave B** next (B1 persistence ∥ B2 service ∥ B3 integration tests). N0–N2, S0, A1, A2 and fan-in A
+  are done. The human approved the spec at the N2
   gate and four more decisions at the pre-implementation grill (BR3/BR4 trigger, status filter, seed stays in
   `InitialCreate` as demo data, BR3 trigger error translated to the domain exception); see [[log]].
 - Resume here: read the newest entries of [[log]], then the node statuses in `plan/graph.yaml`.

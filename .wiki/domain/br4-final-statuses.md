@@ -12,7 +12,7 @@ No transition out of a final status, including to the same status (`Completed �
 `CompletedAt` can never be overwritten). From `New` and `InProgress` every change is allowed. Full 16-row table:
 [[spec]] §5.
 
-| Layer | Where (planned) | How |
+| Layer | Where (domain: implemented at fan-in A; other layers: planned for wave B) | How |
 |---|---|---|
 | Domain | `TaskItem.ChangeStatus` (step 2) in `src/TaskManagement.Domain/TaskItem.cs` | current status final → `BusinessRuleViolationException` (`RuleId == "BR4"`); nothing changes |
 | Application | `TaskService.ChangeTaskStatusAsync` | calls the domain; `DbUpdateConcurrencyException` propagates |

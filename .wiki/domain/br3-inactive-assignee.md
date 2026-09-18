@@ -12,7 +12,7 @@ related: ["[[spec]]", "[[employee]]", "[[task-item]]"]
 `AssigneeId` is set (no reassignment), so BR3 is checked at creation, in two places as the brief requires.
 The creator's status is not checked, and tasks an employee already had before deactivation stay valid.
 
-| Layer | Where (planned) | How |
+| Layer | Where (domain: implemented at fan-in A; other layers: planned for wave B) | How |
 |---|---|---|
 | Application | `TaskService.CreateTaskAsync` in `src/TaskManagement.Application/TaskService.cs` | loads the assignee row, `!IsActive` → `BusinessRuleViolationException` (`RuleId == "BR3"`) before calling the domain |
 | Domain | `TaskItem.Create` (guard 6) | `!assignee.IsActive` → same exception, so no caller can skip it |
