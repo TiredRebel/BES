@@ -93,5 +93,11 @@ projects only). For symbol questions, use `codegraph query <name>`, `codegraph c
 - Agents talk through the message bus: one file per message in `.wiki/agents/bus/`, named
   `<from>-to-<to>-<seq>.md` (for example `A2-to-A1-001.md`). The orchestrator's id is `orch`.
 - Worker reports carry: status, files changed, commands run with their real output, open questions.
+- Progress survives context loss: Claude Code hooks in `.claude/settings.json` run `.claude/hooks/wiki_checkpoint.py`
+  (needs `python` 3 on PATH, standard library only). Before every compaction (manual, or auto when the context window
+  is full) and on an API stop (`StopFailure`: rate limit, max output tokens, …) it writes
+  `.wiki/checkpoints/<UTC time>-<event>.md` with git state, node statuses, the newest bus messages, the last log entry,
+  recent user requests and the last assistant message; after compaction it appends the compaction summary and points
+  the new context at that file. Other tools resume from the newest checkpoint plus `.wiki/index.md`.
 - Development workers load the `ponytail:ponytail` skill before writing code: the smallest code that meets the spec.
   What the brief or spec requires (XML docs, BR guards, constraints, tests) is required, not optional.

@@ -204,3 +204,22 @@ Newest entry at the bottom.
   trigger, applied to a real container including `Down()`), `orch-to-B2-001.md` (service, sonnet) and
   `orch-to-B3-001.md` (Testcontainers tests, sonnet). B2 and B3 compile-check against stubs outside the repo; real
   compilation and test runs happen at fan-in B. graph.yaml: B1, B2, B3 in progress.
+
+## 2026-09-18 · orch · session 1 · context-loss hook; wave B retried after rate limit
+
+- Previous commit: wave B task specs = `d831657`.
+- Human request: add a hook that saves the current context into the wiki before compaction or when token limits are
+  hit. Verified against the Claude Code hooks docs and the settings schema: `PreCompact` (matcher manual|auto; auto =
+  the context window is full), `PostCompact` (has `compact_summary`), `SessionStart` matcher `compact` (can inject
+  `additionalContext`), `StopFailure` (matchers include `rate_limit`, `max_output_tokens`; output ignored, side effects
+  only), and `CLAUDE_PROJECT_DIR` exported to hook commands.
+- Added `.claude/settings.json` (project scope) and `.claude/hooks/wiki_checkpoint.py` (stdlib Python, always exits 0).
+  Checkpoints go to `.wiki/checkpoints/`. Pipe-tested every configured command through bash with synthetic payloads
+  and this session's real transcript: all exit 0; the checkpoint captured 5 user requests and the last assistant
+  message; PostCompact appended the summary; SessionStart emitted the pointer; malformed stdin still exits 0. A
+  `/c/…` transcript path is converted on Windows. Test checkpoints removed.
+- `[uncertain]` The hooks load when a session starts. `.claude/` had no settings file when this session started, so
+  they take effect from the next session (or after reloading hooks in an interactive terminal via `/hooks`).
+- Wave B: B1, B2 and B3 all stopped on an API rate limit (HTTP 429, session limit). B1 and B2 were resumed with their
+  context and their uncommitted worktree files; B3's worktree had been auto-removed (no changes yet), so B3 was
+  restarted fresh with an instruction to commit early.

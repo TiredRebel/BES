@@ -38,6 +38,7 @@ project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikil
 | [[br4-final-statuses]] | BR4: `Completed` and `Cancelled` are final. |
 | [[br5-no-self-assignment]] | BR5: assignee ≠ creator. |
 | [[decisions/index]] | Links to the ADRs in `docs/adr/` (0001–0009; 0009 supersedes 0004). |
+| `checkpoints/` | Automatic progress checkpoints written by the Claude Code hooks before compaction and on API stops. The newest one is where to resume. |
 | `agents/bus/` | Message bus: one file per agent message, `<from>-to-<to>-<seq>.md` (task specs, reports, reviews). |
 
 ## Solution layout (approved at N2; see [[spec]] §1)
