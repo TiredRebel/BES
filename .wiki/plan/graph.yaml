@@ -2,7 +2,7 @@
 # The orchestrator (id: orch) changes a node's `status` only after it has checked the node's evidence itself.
 # status: pending | in_progress | blocked | done | failed
 # Acceptance commands are bash, run from the repo root, and must exit 0.
-# Paths marked `provisional: true` come from the proposed layout; N1 finalises them and the human approves them at N2.
+# Output paths are the exact file lists from .wiki/domain/spec.md §1 (N1); the human approves them at N2.
 
 meta:
   brief: ORCHESTRATOR_PROMPT.md
@@ -13,6 +13,7 @@ meta:
   escalation: "Fails acceptance twice -> escalate one tier once -> fails again -> stop and ask the human."
   worker_line: "Write `[uncertain]` instead of guessing. Report 'not found' instead of inventing a path or API."
   bus: ".wiki/agents/bus/<from>-to-<to>-<seq>.md"
+  dev_skill: "ponytail:ponytail"   # human instruction: every development worker (dev_skill: true) loads it before writing code
 
 nodes:
   - id: N0
@@ -51,7 +52,8 @@ nodes:
       - "`codegraph init -y` on the probe indexes C# (8 files, 66 nodes: class/method/property/namespace/import)"
       - "`codegraph serve --mcp` answers initialize + tools/list (codegraph_explore) in the repo"
       - "`git show --stat HEAD`"
-    status: in_progress
+    commits: [0dac119, d46fbef]
+    status: done
 
   - id: N1
     name: Architect
@@ -70,7 +72,8 @@ nodes:
     evidence:
       - "list of files written"
       - "every package/API/type the spec names, with where it was verified (restored package XML docs, NuGet, Learn)"
-    status: pending
+    report: .wiki/agents/bus/N1-to-orch-001.md
+    status: done
 
   - id: N2
     name: Plan review (fresh context) + HUMAN GATE
@@ -84,7 +87,7 @@ nodes:
     evidence:
       - "review report: invented / missing / out-of-scope items, package & API existence checks"
       - "human approval recorded in .wiki/log.md"
-    status: pending
+    status: in_progress
 
   - id: S0
     name: Scaffold (solution + empty projects per approved layout)
@@ -96,12 +99,13 @@ nodes:
       references and approved package references. No domain code.
     inputs: [.wiki/domain/spec.md]
     outputs:
-      - TaskManagement.slnx                                      # provisional: true
-      - src/TaskManagement.Domain/TaskManagement.Domain.csproj   # provisional: true
-      - src/TaskManagement.Application/TaskManagement.Application.csproj  # provisional: true
-      - src/TaskManagement.Infrastructure/TaskManagement.Infrastructure.csproj  # provisional: true
-      - tests/**/*.csproj                                        # provisional: true (N1 decides 1 or 2 test projects)
-    acceptance: "dotnet build -warnaserror"
+      - TaskManagement.slnx
+      - src/TaskManagement.Domain/TaskManagement.Domain.csproj
+      - src/TaskManagement.Application/TaskManagement.Application.csproj
+      - src/TaskManagement.Infrastructure/TaskManagement.Infrastructure.csproj
+      - tests/TaskManagement.UnitTests/TaskManagement.UnitTests.csproj
+      - tests/TaskManagement.IntegrationTests/TaskManagement.IntegrationTests.csproj
+    acceptance: "dotnet build -warnaserror && dotnet test --filter Category=Unit"
     evidence: ["build output", "`git show --stat HEAD`"]
     status: pending
 
@@ -111,7 +115,12 @@ nodes:
     depends_on: [S0]
     worktree: true
     inputs: [.wiki/domain/spec.md, .wiki/domain/*.md, AGENTS.md]
-    outputs: ["src/TaskManagement.Domain/**/*.cs"]   # provisional: true; exact files listed by N1
+    dev_skill: true
+    outputs:
+      - src/TaskManagement.Domain/Employee.cs
+      - src/TaskManagement.Domain/TaskItem.cs
+      - src/TaskManagement.Domain/TaskItemStatus.cs
+      - src/TaskManagement.Domain/BusinessRuleViolationException.cs
     do_not_touch: ["tests/**", "src/TaskManagement.Infrastructure/**", "src/TaskManagement.Application/**", "*.csproj"]
     acceptance: >-
       dotnet build src/TaskManagement.Domain -warnaserror
@@ -125,7 +134,11 @@ nodes:
     depends_on: [S0]
     worktree: true
     inputs: [.wiki/domain/spec.md, .wiki/domain/br*.md, AGENTS.md]
-    outputs: ["tests/<unit test project>/**/*.cs"]   # provisional: true
+    dev_skill: true
+    outputs:
+      - tests/TaskManagement.UnitTests/EmployeeTests.cs
+      - tests/TaskManagement.UnitTests/TaskItemCreateTests.cs
+      - tests/TaskManagement.UnitTests/TaskItemChangeStatusTests.cs
     do_not_touch: ["src/**", "*.csproj"]
     acceptance: >-
       `git diff --stat` of the worktree branch touches only the declared outputs.
@@ -152,8 +165,16 @@ nodes:
     tier: opus (effort high); schema work is never routed down
     depends_on: [FA]
     worktree: true
-    inputs: [.wiki/domain/spec.md, docs/adr/**, "src/TaskManagement.Domain/**"]
-    outputs: ["src/TaskManagement.Infrastructure/**"]   # provisional: true
+    inputs: [.wiki/domain/spec.md, docs/adr/**, "src/TaskManagement.Domain/**", AGENTS.md]
+    dev_skill: true
+    outputs:
+      - src/TaskManagement.Infrastructure/TaskManagementDbContext.cs
+      - src/TaskManagement.Infrastructure/TaskManagementDbContextFactory.cs
+      - src/TaskManagement.Infrastructure/Configurations/EmployeeConfiguration.cs
+      - src/TaskManagement.Infrastructure/Configurations/TaskItemConfiguration.cs
+      - src/TaskManagement.Infrastructure/Migrations/*_InitialCreate.cs            # glob: the timestamp comes from dotnet ef
+      - src/TaskManagement.Infrastructure/Migrations/*_InitialCreate.Designer.cs
+      - src/TaskManagement.Infrastructure/Migrations/TaskManagementDbContextModelSnapshot.cs
     do_not_touch: ["src/TaskManagement.Domain/**", "src/TaskManagement.Application/**", "tests/**"]
     acceptance: >-
       dotnet build -warnaserror
@@ -166,8 +187,9 @@ nodes:
     tier: sonnet
     depends_on: [FA]
     worktree: true
-    inputs: [.wiki/domain/spec.md, "src/TaskManagement.Domain/**"]
-    outputs: ["src/TaskManagement.Application/**"]   # provisional: true
+    inputs: [.wiki/domain/spec.md, "src/TaskManagement.Domain/**", AGENTS.md]
+    dev_skill: true
+    outputs: [src/TaskManagement.Application/TaskService.cs]
     do_not_touch: ["src/TaskManagement.Domain/**", "src/TaskManagement.Infrastructure/**", "tests/**"]
     acceptance: "`git diff --stat` touches only declared outputs; compile checked at FB (depends on B1's DbContext contract from the spec)"
     evidence: ["`git diff --stat`", "public API list"]
@@ -178,8 +200,13 @@ nodes:
     tier: sonnet
     depends_on: [FA]
     worktree: true
-    inputs: [.wiki/domain/spec.md]
-    outputs: ["tests/<integration test project>/**/*.cs"]   # provisional: true
+    inputs: [.wiki/domain/spec.md, AGENTS.md]
+    dev_skill: true
+    outputs:
+      - tests/TaskManagement.IntegrationTests/PostgresFixture.cs
+      - tests/TaskManagement.IntegrationTests/MigrationAndSeedTests.cs
+      - tests/TaskManagement.IntegrationTests/DatabaseConstraintTests.cs
+      - tests/TaskManagement.IntegrationTests/TaskServiceTests.cs
     do_not_touch: ["src/**"]
     acceptance: "`git diff --stat` touches only declared outputs; compile + pass checked at FB"
     evidence: ["`git diff --stat`", "test list: DB rejects BR1/BR2/BR5 via raw SQL, migration applies to empty DB, seed loads, use cases"]
@@ -206,7 +233,11 @@ nodes:
     tier: haiku (template-driven, fixed output shape)
     depends_on: [FB]
     outputs: [README.md, ".wiki/domain/*.md (code links)", .wiki/decisions/index.md, .wiki/index.md]
-    acceptance: "every [[wikilink]] resolves to a file under .wiki/ and every code path cited in .wiki/ and README.md exists"
+    acceptance: >-
+      every [[wikilink]] and relative link in .wiki/, docs/adr/ and README.md resolves (orch's link checker exits 0)
+      && for h in '## Prerequisites' '## Migrations' '## Tests' '## Where each business rule is enforced'; do grep -qF "$h" README.md || exit 1; done
+      && for b in BR1 BR2 BR3 BR4 BR5; do grep -qE "^\| *$b " README.md || exit 1; done
+    readme_must_have: [prerequisites, how to run migrations, how to run tests, where each BR is enforced, BR1-BR5 -> failing-then-passing test table]
     status: pending
 
   - id: D2
@@ -231,6 +262,7 @@ nodes:
   - id: D4
     name: Fix loop (confirmed findings only), then re-run D3 once
     tier: per finding (schema -> opus)
+    dev_skill: true
     depends_on: [D3]
     acceptance: "dotnet build -warnaserror && dotnet test"
     commit: "fix: address confirmed review findings"

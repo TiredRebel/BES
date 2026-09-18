@@ -71,7 +71,7 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 codegraph sync .                              # refresh the code graph index after code changes
 ```
 
-Project paths are provisional until the architecture spec is approved; `.wiki/index.md` has the current layout.
+Solution layout and the exact file list per node: `.wiki/domain/spec.md` §1.
 
 ## Code graph
 
@@ -92,3 +92,5 @@ projects only). For symbol questions, use `codegraph query <name>`, `codegraph c
 - Agents talk through the message bus: one file per message in `.wiki/agents/bus/`, named
   `<from>-to-<to>-<seq>.md` (for example `A2-to-A1-001.md`). The orchestrator's id is `orch`.
 - Worker reports carry: status, files changed, commands run with their real output, open questions.
+- Development workers load the `ponytail:ponytail` skill before writing code: the smallest code that meets the spec.
+  What the brief or spec requires (XML docs, BR guards, constraints, tests) is required, not optional.

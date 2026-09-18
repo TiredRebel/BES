@@ -63,3 +63,41 @@ Newest entry at the bottom.
 - Validation: on the probe, `codegraph init -y` → 8 C# files, 66 nodes (class 8, method 11, property 5, namespace 8,
   import 26), `codegraph query Employee` resolves class + ctor + file. In the repo: `codegraph status` → "Index is up
   to date"; an MCP stdio handshake → `initialize` = `codegraph 1.6.0`, `tools/list` = `codegraph_explore`.
+
+## 2026-09-18 · orch + N1 (opus) + N2 (opus) · session 1 · N1 spec, N2 review, fixes
+
+- Previous commit: CodeGraph correction = `d46fbef`.
+- N1 (opus subagent) wrote `.wiki/domain/spec.md` (§1–§16), entity pages `employee`, `task-item`, BR pages
+  `br1`–`br5`, ADRs 0001–0008, `.wiki/decisions/index.md`, and its report `agents/bus/N1-to-orch-001.md`.
+  It ran all constraint DDL, the seed and every violation in a throwaway `postgres:17-alpine` (17.10) container.
+  orch checks: N1 acceptance command exit 0; link checker "unresolved links: none"; each ADR has Context/Decision/
+  Consequences.
+- orch resolved two N1 `[uncertain]` items on the N0 probe:
+  - `dotnet ef migrations list --project src/Probe.Infra --no-connect` from the probe root, with and without
+    `--startup-project` → both `exit 0`, same output (dotnet-ef falls back to `--project`).
+  - Solution-level `dotnet test --no-build --filter Category=Unit` with a second test project holding only an
+    Integration test → "No test matches the given testcase filter `Category=Unit` in …Probe.Int.dll", then
+    "Passed! Failed: 0, Passed: 1", `exit: 0`.
+- N2 (fresh opus subagent) review, `agents/bus/N2-to-orch-001.md`: **approve with fixes**. 0 blockers, 1 major,
+  7 minor; nothing invented, nothing out of scope. orch applied all 8:
+  - F1 (major): the documentation standard was not in the spec and did not reach B1/B2/B3 → added spec §2a
+    "Documentation standard"; added `AGENTS.md` to the B1/B2/B3 inputs in graph.yaml.
+  - F2: added CA1861/CA1859/CA1816/CA1051/CA1001 and `xunit.analyzers` to spec §2.
+  - F3: removed the two resolved `[uncertain]` markers (spec §1, §13, ADR 0001); the spec's `dotnet ef` commands now
+    match `AGENTS.md`.
+  - F4: B1 migration outputs in graph.yaml are globs (`*_InitialCreate.cs`, `*_InitialCreate.Designer.cs`).
+  - F5: the service half of BR3 had no failing-then-passing test → new B3 test
+    `CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck`. It goes red if only the service
+    check is removed, because the domain then throws BR5 first.
+  - F6: BR3 page now lists `Deactivate_ActiveEmployee_SetsIsActiveFalse` as a precondition, not a BR3 test.
+  - F7: `.wiki/index.md` maps every page.
+  - F8: D1 acceptance now greps README.md for the four required sections and a BR1–BR5 table.
+- Human instruction (mid-session): development workers use the `ponytail:ponytail` skill. Recorded in `AGENTS.md`
+  (Workflow) and graph.yaml (`meta.dev_skill`, `dev_skill: true` on A1, A2, B1, B2, B3, D4).
+- Status: waiting at the N2 human gate. Nothing past N2 has started.
+- Pre-gate check (advisor): the bare `--project` form was also probed for `migrations add`
+  (`dotnet ef migrations add ProbeTwo --project src/Probe.Infra` from the probe root → exit 0) and for
+  `database update` against a live `postgres:17-alpine`
+  (`--project src/Probe.Infra --connection "Host=localhost;Port=55432;…"` → "Done.", exit 0; `employees` has the seed
+  row, `ck_name` exists). So the FB acceptance form works as written. Spec §15 notes that the F5 test depends on BR5
+  being checked before BR3; §2a pins the `[InlineData]` enum form.
