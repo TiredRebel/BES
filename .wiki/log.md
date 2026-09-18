@@ -162,3 +162,10 @@ Newest entry at the bottom.
   amendment; BR3 and BR4 pages; decisions index; graph.yaml (B1 acceptance greps the trigger, D1 acceptance requires
   `## Seed data` + "demo data"; A1, A2 in progress).
 - Shared understanding confirmed by the human ("Q4 b, confirmed"). Wave A starts next.
+
+## 2026-09-18 · orch · session 1 · wave A dispatched
+
+- Previous commit: grill decisions = `9ae015b`.
+- Task specs `agents/bus/orch-to-A1-001.md` (domain) and `orch-to-A2-001.md` (unit tests, from the spec only)
+  committed so both worktrees contain them. A1 and A2 run as parallel sonnet subagents, each in its own git worktree,
+  and each loads `ponytail:ponytail` first.
