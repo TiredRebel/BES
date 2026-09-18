@@ -255,3 +255,16 @@ Newest entry at the bottom.
   `EmployeeTests → Employee`, `TaskItemCreateTests → TaskItem` and fixture/DbContext edges, and pointed the dashed
   project edges at existing subgraphs.
 - Wiki: entity and BR pages mark the database and service layers implemented. graph.yaml: B1, B2, B3, FB done.
+
+## 2026-09-18 · orch + D1 (haiku) · session 1 · D1 README, D2 code map
+
+- Previous commit: fan-in B = `8bd46ee`.
+- D1: a haiku agent wrote `README.md` from a fixed template (module purpose, layout, prerequisites, migrations, tests,
+  where each BR is enforced, failing-then-passing tests per BR, seed data = demo data, documentation). orch checked
+  every fact against its source and fixed three: test method counts (34 unit / 33 integration, from grep), BR4's
+  database red evidence (the trigger removal turned `Update_StatusOfCompletedTask_RejectedByBR4Trigger` red, not
+  the concurrency test), and BR3's database red evidence (only "trigger not created" was run). D1 acceptance → exit 0;
+  all 29 test names cited in the README exist in `tests/`.
+- D2: `codegraph sync . && codegraph status . && test -s .wiki/codemap.md && grep -q '```mermaid' .wiki/codemap.md` →
+  exit 0 (the map was regenerated at fan-in B; the README adds no code).
+- graph.yaml: D1, D2 done. Next: D3 review.

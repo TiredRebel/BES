@@ -16,7 +16,7 @@ project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikil
 
 ## Current state
 
-- Phase: **D1 docs ∥ D2 codemap**, then D3 review and D4 fixes. N0–N2, S0, waves A and B and both fan-ins
+- Phase: **D3 review**, then D4 fixes. D1 (README) and D2 (code map) are done. N0–N2, S0, waves A and B and both fan-ins
   are done: 88 tests (54 unit, 34 integration) pass. The human approved the spec at the N2
   gate and four more decisions at the pre-implementation grill (BR3/BR4 trigger, status filter, seed stays in
   `InitialCreate` as demo data, BR3 trigger error translated to the domain exception); see [[log]].

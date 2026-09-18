@@ -241,7 +241,7 @@ nodes:
       && grep -qi 'demo data' README.md
       && for b in BR1 BR2 BR3 BR4 BR5; do grep -qE "^\| *$b " README.md || exit 1; done
     readme_must_have: [module purpose (assigning, executing, controlling employees' tasks), prerequisites, how to run migrations, how to run tests, where each BR is enforced, BR1-BR5 -> failing-then-passing test table, seed data is demo data (grill Q3)]
-    status: pending
+    status: done
 
   - id: D2
     name: Codemap
@@ -250,7 +250,7 @@ nodes:
     outputs: [.wiki/codemap.md]
     acceptance: >-
       codegraph sync . && codegraph status . && test -s .wiki/codemap.md && grep -q '```mermaid' .wiki/codemap.md
-    status: pending
+    status: done
 
   - id: D3
     name: Review
