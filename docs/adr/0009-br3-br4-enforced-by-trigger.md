@@ -36,8 +36,10 @@ and BR4 with a trigger, and translate the trigger's BR3 rejection into the domai
 
 - Every writer is held to BR4 and to BR3 **on insert**, raw SQL included, and the BR3 race is closed. BR3 is
   checked only when a task is inserted, because creation is the only moment the model sets an assignee (spec §8).
-  A raw-SQL `UPDATE` of `assignee_id` to an inactive employee is not rejected (D3 findings F2/T1); covering it
-  would mean extending the trigger to `UPDATE OF status, assignee_id`, a schema change for the human to approve.
+  A raw-SQL `UPDATE` of `assignee_id` to an inactive employee is not rejected (D3 findings F2/T1). Covering it would
+  take two changes: the trigger would fire on `UPDATE OF status, assignee_id`, and the function would run its BR3
+  lookup also when an update changes `assignee_id` (today the lookup runs only for `INSERT`). That is a schema change
+  for the human to approve.
   About the race: while a task insert's transaction is open, a concurrent update of that employee row
   (deactivation, but also a name or e-mail change) waits for it. With EF's short `SaveChanges` transactions, that
   wait is milliseconds.

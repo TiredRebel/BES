@@ -66,3 +66,27 @@ Every D3 finding, marked **confirmed** (fixed in D4), **confirmed, docs only**, 
 
 `dotnet build -warnaserror` → 0 warnings, 0 errors; `dotnet test` → 56/56 unit, 38/38 integration.
 D4 red evidence: `d4_red_evidence.txt` (scratchpad, quoted in `.wiki/log.md`).
+
+## After the D3 re-run (reports `D3-to-orch-101/102/104/105.md`)
+
+The brief allows D3 one re-run; it ran on `git diff ae7bb74 5b0650c` with the code, comment, silent-failure and test
+lenses (type-design was skipped: D4 changed 0 non-doc lines in the domain). Every earlier fix was verified. The
+re-run's findings, and orch's corrections to this record:
+
+| Finding | Disposition | Evidence / change |
+|---|---|---|
+| N1 (code-reviewer, major) = SF6 (silent-failure, major) | **confirmed, fixed (docs)** | Detaching on a failed save (needed for SF2) means the exception's entries are already detached, so EF's "client wins" recovery saves 0 rows. The detach stays; the `DbUpdateConcurrencyException` and `DbUpdateException` docs now say the entries are detached and the retry is calling the method again. |
+| SF3 (silent-failure, minor) | **correction: not resolved by SF1** | A caller that leaves its own pending task in the context can still get a BR3 message naming this call's assignee. Documented in `CreateTaskAsync` remarks. Tightening the filter (`ex.Entries.Count == 1 && ReferenceEquals(ex.Entries[0].Entity, task)`) would change spec §14 step 6: for the human. |
+| F4 (code-reviewer, nit) | **correction: missing row** | Same issue as J-15 (`DateTimeOffset.UtcNow` in two tests); skipped as a nit. |
+| C17 (comments, nit) | **correction** | Marked skipped above, but D4 did fix it (`TaskService` constructor doc). |
+| N01 (comments, minor) | **confirmed, fixed** | ADR 0009 now says that covering reassignment needs the trigger on `UPDATE OF status, assignee_id` **and** the function's BR3 lookup on such updates. |
+| N02 (comments, minor) | **confirmed, fixed** | The FK test's doc and its spec row no longer claim the constraint-name condition is covered (no other `23514` is reachable through the service). |
+| N03, N04, N05, N09 (comments, nit) | **fixed** | "the method" named; "both reject" corrected in the test and service docs; interceptor documented; line wrap. |
+| K-1 (tests, minor) | **confirmed, fixed** | The FK test now creates another task on the same context after the untranslated failure; removing the `CreateTaskAsync` detach now fails it too (final D4 evidence: 2 red). |
+| K-2 (tests, minor) | **confirmed, fixed** | The F1 test asserts its first failure's inner exception is a `DbUpdateException` (from the trigger). |
+| K-4 (tests, minor) | **confirmed, fixed** | README red-evidence section rewritten from a final re-run of all three mutation scripts (FA, FB, D4) on the final code. |
+| P1 (code-reviewer, process) | **for the human** | D4 edited the approved spec: §14 (failed-save cleanup steps) and §15 (new test rows), plus the BR4/BR5 pages. The schema sections §10–§12 are unchanged. Listed in the final report for ratification. |
+| K-3, N06, N07, N08, SF7, J-3 (optional half), J-9 (narrow variant), J-11 (padded title) | **skipped (nit or optional)** | Listed as next steps. |
+
+Final state: `dotnet build -warnaserror` 0/0; `dotnet test` 56/56 unit, 38/38 integration; FA/FB/D4 mutation runs as
+quoted in `.wiki/log.md`.

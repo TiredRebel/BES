@@ -71,7 +71,8 @@ public sealed class TaskServiceTests : IAsyncLifetime
 
     /// <summary>
     /// Verifies BR3 through the service: an inactive assignee is rejected and nothing is persisted. The service's
-    /// own check and the domain's re-check both reject this case; the service half alone is proven by
+    /// own check fires first; the domain would reject it too if the service check were removed. The service half
+    /// alone is proven by
     /// <c>CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck</c>.
     /// </summary>
     /// <remarks>Enforces BR3.</remarks>
@@ -304,9 +305,8 @@ public sealed class TaskServiceTests : IAsyncLifetime
     /// <summary>
     /// Verifies the BR3 race (grill Q4): the service's query does run, but a context that already tracks Bob keeps
     /// its tracked, stale copy (still active), so only the database trigger catches a deactivation committed after
-    /// the read. The service must translate the
-    /// trigger's rejection into <see cref="BusinessRuleViolationException"/> while keeping the original exception
-    /// chain, and must not leave a persisted task behind.
+    /// the read. The service must translate the trigger's rejection into <see cref="BusinessRuleViolationException"/>
+    /// while keeping the original exception chain, and must not leave a persisted task behind.
     /// </summary>
     /// <remarks>Enforces BR3 at the database, translated by the service (ADR 0009).</remarks>
     [Fact]
@@ -344,8 +344,9 @@ public sealed class TaskServiceTests : IAsyncLifetime
         await _dbContext.Database.ExecuteSqlRawAsync(
             "UPDATE employees SET is_active = false WHERE id = '10000000-0000-0000-0000-000000000002'");
         var service = new TaskService(_dbContext, _timeProvider);
-        await Assert.ThrowsAsync<BusinessRuleViolationException>(
+        var rejection = await Assert.ThrowsAsync<BusinessRuleViolationException>(
             () => service.CreateTaskAsync("Race", AliceId, BobId, null, null));
+        Assert.IsType<DbUpdateException>(rejection.InnerException);
 
         var next = await service.CreateTaskAsync("Next", BobId, AliceId, null, null);
 
@@ -390,7 +391,11 @@ public sealed class TaskServiceTests : IAsyncLifetime
     /// (<c>fk_tasks_employees_assignee_id</c>), not as a business-rule violation, and nothing is persisted. A save
     /// interceptor deletes the assignee on another connection just before the insert, a real interleaving.
     /// </summary>
-    /// <remarks>Verifies that the BR3 catch filter in <see cref="TaskService.CreateTaskAsync"/> stays narrow (D3 finding J-4).</remarks>
+    /// <remarks>
+    /// Verifies that the BR3 catch filter in <see cref="TaskService.CreateTaskAsync"/> lets a non-check-violation error
+    /// through untranslated, and that the context stays usable after an untranslated failure. The filter's
+    /// constraint-name condition is not covered: no other <c>23514</c> error can be reached through the service.
+    /// </remarks>
     [Fact]
     [Trait("Category", "Integration")]
     public async Task CreateTaskAsync_AssigneeDeletedBeforeInsert_ThrowsForeignKeyDbUpdateException()
@@ -411,10 +416,13 @@ public sealed class TaskServiceTests : IAsyncLifetime
         var postgresException = Assert.IsType<PostgresException>(ex.InnerException);
         Assert.Equal(PostgresErrorCodes.ForeignKeyViolation, postgresException.SqlState);
         Assert.Equal("fk_tasks_employees_assignee_id", postgresException.ConstraintName);
+        var next = await service.CreateTaskAsync("After orphan", AliceId, BobId, null, null);
         await using var readContext = PostgresFixture.CreateContext(_connectionString);
         Assert.False(await readContext.Tasks.AnyAsync(t => t.Title == "Orphan"));
+        Assert.True(await readContext.Tasks.AnyAsync(t => t.Id == next.Id));
     }
 
+    /// <summary>Deletes one employee on its own connection just before each save, to force an FK race.</summary>
     private sealed class DeleteEmployeeBeforeSaveInterceptor(string connectionString, Guid employeeId) : SaveChangesInterceptor
     {
         public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(

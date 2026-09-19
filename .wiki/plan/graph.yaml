@@ -269,4 +269,4 @@ nodes:
     depends_on: [D3]
     acceptance: "dotnet build -warnaserror && dotnet test"
     commit: "fix: address confirmed review findings"
-    status: in_progress
+    status: done

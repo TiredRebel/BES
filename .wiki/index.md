@@ -16,7 +16,8 @@ project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikil
 
 ## Current state
 
-- Phase: **D4 done, D3 re-run pending** (the brief's single re-review). 94 tests (56 unit, 38 integration) pass. N0–N2, S0, waves A and B and both fan-ins
+- Phase: **all nodes done**. D3 re-ran once on the D4 fixes; its findings are fixed or listed as next steps. 94 tests
+  (56 unit, 38 integration) pass. Open questions for the human are in the newest [[log]] entry. N0–N2, S0, waves A and B and both fan-ins
   are done: 88 tests (54 unit, 34 integration) pass. The human approved the spec at the N2
   gate and four more decisions at the pre-implementation grill (BR3/BR4 trigger, status filter, seed stays in
   `InitialCreate` as demo data, BR3 trigger error translated to the domain exception); see [[log]].

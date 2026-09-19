@@ -303,3 +303,31 @@ Newest entry at the bottom.
 - Deferred to the human: extending the trigger to cover a reassignment (`UPDATE OF status, assignee_id`), which
   changes the approved schema (F2/T1). Skipped as nits or not required: C15–C21, T2, T3, J-7, J-10, J-12–J-15.
 - Next: re-run D3 once on the D4 diff, as the brief requires.
+
+## 2026-09-19 · orch + D3 re-run reviewers (opus ×4) · session 1 · D3 re-run, final fixes, all nodes done
+
+- Previous commit: D4 = `5b0650c`.
+- D3 re-run (the brief's single re-run) on `git diff ae7bb74 5b0650c`, four lenses (type-design skipped: 0 non-doc
+  domain lines). Reports `agents/bus/D3-to-orch-101/102/104/105.md`. All earlier fixes verified by code and probes.
+  New: N1 = SF6 (major), where detaching before the exception reaches the caller means EF's "client wins" recovery
+  saves 0 rows; SF3 not actually resolved (orch's triage was wrong); N01, N02, K-1, K-2, K-4 (minor); nits.
+- Final fixes (orch; no second re-run, per the brief): docs for N1/SF6 (the entries are detached, so retry by calling
+  the method again) and SF3 (a caller's own pending changes); ADR 0009's advice on covering reassignment corrected
+  (N01: the function's BR3 branch must change too); FK-test doc and spec row (N02); doc nits N03, N04, N05, N09; K-1
+  (the FK test reuses its context after the failure); K-2 (the F1 test asserts its first failure came from the trigger);
+  K-4 (README red-evidence section rewritten from a final re-run of all mutations). Triage corrections (SF3, F4, C17)
+  are in `agents/bus/orch-to-D4-001.md`.
+- Final measured evidence, on the final code (each file restored byte-for-byte):
+  - domain: BR5 guard → 2 red (incl. the new guard-order test); BR3 → 1; BR2 → 2; BR4 → 9; BR1 assignment → 5;
+  - database: BR1 CHECK → 3 + schema; BR2 CHECK → 1 + schema; BR5 CHECK → 1 + schema; trigger not created → 6 (BR3
+    trigger, both BR4 trigger tests, schema, race test, F1 reuse test);
+  - service: own BR3 check → only the service-half test; translation removed → race test + F1 reuse test;
+  - D4: CreateTaskAsync detach → F1 reuse test + FK test; ChangeTaskStatusAsync detach → only the SF2 retry test;
+    filter widened → only the FK test; trigger without `'Cancelled'` → only the Cancelled BR4 test.
+- Gates: `dotnet build -warnaserror` → 0/0; `dotnet test` → 56/56 unit, 38/38 integration; attribute gate → exit 0;
+  D1 acceptance → exit 0; all test names cited in the README exist. graph.yaml: every node done.
+- Open for the human:
+  1. Ratify D4's edits to the approved spec (§14 failed-save cleanup steps, §15 new test rows, BR4/BR5 pages;
+     §10–§12 schema unchanged).
+  2. Extend the trigger to cover reassignment (`UPDATE OF status, assignee_id` plus the BR3 lookup on such updates)?
+  3. Tighten the BR3 catch filter to this call's task only (SF3), or keep the documented behaviour?

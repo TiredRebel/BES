@@ -11,8 +11,9 @@ namespace TaskManagement.Application;
 /// </summary>
 /// <remarks>
 /// No interface: there is one implementation and the integration tests exercise it against a real database, so
-/// there is no mocking need. When a save fails, the method detaches the entity it added or changed, so a caller that
-/// keeps using the same context never has that failed change retried by a later save.
+/// there is no mocking need. When a save fails, <see cref="CreateTaskAsync"/> and <see cref="ChangeTaskStatusAsync"/>
+/// detach the task they added or changed, so a caller that keeps using the same context never has that failed change
+/// retried by a later save.
 /// </remarks>
 public sealed class TaskService
 {
@@ -44,20 +45,24 @@ public sealed class TaskService
     /// <exception cref="ArgumentException"><paramref name="title"/> is empty, whitespace, or longer than 200 characters once trimmed.</exception>
     /// <exception cref="KeyNotFoundException"><paramref name="creatorId"/> or <paramref name="assigneeId"/> does not match an employee when they are read.</exception>
     /// <exception cref="BusinessRuleViolationException">
-    /// BR3: the assignee is inactive, whether caught by this method's own check, the domain's re-check, or the
-    /// database trigger on a race. BR5: the creator and the assignee are the same (active) employee. BR2: both dates
+    /// BR3: the assignee is inactive, caught by this method's own check or, on a race, by the database trigger (the
+    /// domain re-checks BR3 too, but through this method it sees the same employee, so its check never fires first). BR5: the creator and the assignee are the same (active) employee. BR2: both dates
     /// are set and <paramref name="dueAt"/> is earlier than <paramref name="plannedStartAt"/>. Only the first
     /// violated rule is reported (see remarks).
     /// </exception>
     /// <exception cref="DbUpdateException">
     /// The database rejected the insert for a reason other than the BR3 trigger, for example the foreign key when an
-    /// employee is deleted between the read and the insert.
+    /// employee is deleted between the read and the insert. The new task is already detached when this reaches the
+    /// caller, so the exception's entries cannot be saved again; call this method again instead.
     /// </exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     /// <remarks>
     /// Enforces BR2, BR3 and BR5. Check order: this method checks BR3 before calling
     /// <see cref="TaskItem.Create"/>, which checks BR5, then BR3, then BR2. So when one inactive employee is both
     /// creator and assignee, BR3 is reported. If the save fails, the new task is detached from the context.
+    /// The save also sends any other pending changes the caller left in the context. If one of those is rejected by
+    /// the BR3 trigger, it is reported as BR3 for this call's assignee, so save or discard your own pending changes
+    /// before calling this method.
     /// </remarks>
     public async Task<TaskItem> CreateTaskAsync(
         string title,
@@ -127,7 +132,11 @@ public sealed class TaskService
     /// <exception cref="KeyNotFoundException"><paramref name="taskId"/> does not match a task.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="newStatus"/> is not a defined <see cref="TaskItemStatus"/> member.</exception>
     /// <exception cref="BusinessRuleViolationException">BR4: the task's current status is <see cref="TaskItemStatus.Completed"/> or <see cref="TaskItemStatus.Cancelled"/>, which are final.</exception>
-    /// <exception cref="DbUpdateConcurrencyException">Another writer changed the task since it was read.</exception>
+    /// <exception cref="DbUpdateConcurrencyException">
+    /// Another writer changed the task since it was read. The task is already detached when this reaches the caller,
+    /// so EF's usual recovery from the exception's entries (such as "client wins") saves nothing; resolve the
+    /// conflict by calling this method again, which reloads the current row.
+    /// </exception>
     /// <exception cref="DbUpdateException">The database rejected the update for another reason.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     /// <remarks>
