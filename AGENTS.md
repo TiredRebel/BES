@@ -10,7 +10,7 @@ the execution graph (`.wiki/plan/graph.yaml`, with each node's status) and the s
 
 The data layer of **Task Management**, the internal CRM module for assigning, executing and controlling employees'
 tasks: PostgreSQL + EF Core.
-Covers employees, tasks, task assignment, deadlines and statuses, enforcing business rules BR1–BR5
+Covers employees, tasks, task assignment, deadlines and statuses, enforcing business rules BR1-BR5
 (defined in `.wiki/domain/`). Scope is backend/data only: domain, persistence, an application service, tests.
 A web API, UI or server host is out of scope.
 
@@ -52,7 +52,7 @@ generated code.
 ## Conventions
 
 - XML docs on every type and member: `<summary>`, `<param>`, `<returns>`, `<exception>`, and a `<remarks>` naming
-  the business rule (BR1–BR5) the code enforces.
+  the business rule (BR1-BR5) the code enforces.
 - Each Fluent configuration class documents which index or constraint it creates and why.
 - Each migration starts with a header comment listing its schema changes.
 - Timestamps are `DateTimeOffset` in UTC, stored as `timestamptz`.
@@ -101,3 +101,4 @@ projects only). For symbol questions, use `codegraph query <name>`, `codegraph c
   the new context at that file. Other tools resume from the newest checkpoint plus `.wiki/index.md`.
 - Development workers load the `ponytail:ponytail` skill before writing code: the smallest code that meets the spec.
   What the brief or spec requires (XML docs, BR guards, constraints, tests) is required, not optional.
+- Parallel agent work runs in dedicated git worktrees (`git worktree add`). Never switch branches in the primary worktree while another agent or build is active. After merging/fan-in, prune stale worktrees with `git worktree prune`.

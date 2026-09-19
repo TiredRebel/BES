@@ -198,6 +198,7 @@ stateDiagram-v2
 > **Verification & Seed Data:**
 > - Full protocol of red-evidence verification (failing-then-passing test matrix upon disabling protections) and test suite results (101 tests) are documented in [docs/testing/red-evidence.en.md](docs/testing/red-evidence.en.md) (also see [README.md (Section 4.3)](README.md#43-результати-тестування-56-unit-тестів--45-інтеграційних-тестів-101-тест)).
 > - Initial seed data (Olena Kovalenko, Bohdan Shevchenko, inactive Oksana Melnyk for BR3 testing, and 3 demo tasks) is detailed in [README.md (Section 1.3)](README.md#13-моделювання-демо-даних-seed-data-та-роль-неактивного-співробітника).
+> - Engineering culture: isolated `git worktree` instances were used for parallel agent collaboration with subsequent cleanup via `git worktree prune` (see [README.md (Section 4.1)](README.md#інженерна-культура-та-git-worktrees-паралелізм-без-конфліктів)).
 
 ## Documentation
 
