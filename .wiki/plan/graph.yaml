@@ -6,7 +6,7 @@
 
 meta:
   brief: ORCHESTRATOR_PROMPT.md
-  repo_root: "E:\\BSS TT"
+  repo_root: "E:\\BES TT"
   branches:
     main: N0 bootstrap commit only
     feature: feature/task-management   # every later commit; D3 reviews `git diff main...feature/task-management`

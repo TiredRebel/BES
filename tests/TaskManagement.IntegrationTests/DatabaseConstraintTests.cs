@@ -169,7 +169,7 @@ public sealed class DatabaseConstraintTests : IAsyncLifetime
     {
         var ex = await AssertRejectedAsync(
             "INSERT INTO employees (id, full_name, email, is_active) VALUES " +
-            "('10000000-0000-0000-0000-000000000009', 'Alice Duplicate', 'alice.morgan@example.com', true)");
+            "('10000000-0000-0000-0000-000000000009', 'Олена Дублікат', 'olena.kovalenko@example.com', true)");
 
         Assert.Equal(PostgresErrorCodes.UniqueViolation, ex.SqlState);
         Assert.Equal("ux_employees_email", ex.ConstraintName);

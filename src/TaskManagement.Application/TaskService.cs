@@ -15,21 +15,10 @@ namespace TaskManagement.Application;
 /// detach the task they added or changed, so a caller that keeps using the same context never has that failed change
 /// retried by a later save.
 /// </remarks>
-public sealed class TaskService
+/// <param name="dbContext">The database context the three use cases read and write through.</param>
+/// <param name="timeProvider">The clock that supplies <see cref="TaskItem.CompletedAt"/> when a task is completed.</param>
+public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider timeProvider)
 {
-    private readonly TaskManagementDbContext dbContext;
-    private readonly TimeProvider timeProvider;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="TaskService"/> class.
-    /// </summary>
-    /// <param name="dbContext">The database context the three use cases read and write through.</param>
-    /// <param name="timeProvider">The clock that supplies <see cref="TaskItem.CompletedAt"/> when a task is completed.</param>
-    public TaskService(TaskManagementDbContext dbContext, TimeProvider timeProvider)
-    {
-        this.dbContext = dbContext;
-        this.timeProvider = timeProvider;
-    }
 
     /// <summary>
     /// Assigns a new task from <paramref name="creatorId"/> to <paramref name="assigneeId"/>.
@@ -72,17 +61,11 @@ public sealed class TaskService
         DateTimeOffset? dueAt,
         CancellationToken cancellationToken = default)
     {
-        var creator = await dbContext.Employees.SingleOrDefaultAsync(e => e.Id == creatorId, cancellationToken);
-        if (creator is null)
-        {
-            throw new KeyNotFoundException($"Employee {creatorId} was not found.");
-        }
+        var creator = await dbContext.Employees.SingleOrDefaultAsync(e => e.Id == creatorId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Employee {creatorId} was not found.");
 
-        var assignee = await dbContext.Employees.SingleOrDefaultAsync(e => e.Id == assigneeId, cancellationToken);
-        if (assignee is null)
-        {
-            throw new KeyNotFoundException($"Employee {assigneeId} was not found.");
-        }
+        var assignee = await dbContext.Employees.SingleOrDefaultAsync(e => e.Id == assigneeId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Employee {assigneeId} was not found.");
 
         if (!assignee.IsActive)
         {
@@ -148,11 +131,8 @@ public sealed class TaskService
         TaskItemStatus newStatus,
         CancellationToken cancellationToken = default)
     {
-        var task = await dbContext.Tasks.SingleOrDefaultAsync(t => t.Id == taskId, cancellationToken);
-        if (task is null)
-        {
-            throw new KeyNotFoundException($"Task {taskId} was not found.");
-        }
+        var task = await dbContext.Tasks.SingleOrDefaultAsync(t => t.Id == taskId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Task {taskId} was not found.");
 
         task.ChangeStatus(newStatus, timeProvider.GetUtcNow());
 
@@ -175,6 +155,91 @@ public sealed class TaskService
     }
 
     /// <summary>
+    /// Lists a page of tasks matching the specified query criteria, most-imminent deadline first,
+    /// using keyset pagination.
+    /// </summary>
+    /// <param name="query">The query parameters and pagination criteria to filter tasks by.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>
+    /// A <see cref="PagedResult{TaskItem}"/> containing the matching tasks for the requested page, ordered by
+    /// <see cref="TaskItem.DueAt"/> then <see cref="TaskItem.Id"/> (tasks without a deadline come last), along with
+    /// the <see cref="TaskCursor"/> for the next page if more tasks exist. The returned tasks are untracked; a
+    /// status change goes through <see cref="ChangeTaskStatusAsync"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="query"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="TaskListQuery.Status"/> has a value that is not a defined <see cref="TaskItemStatus"/> member.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+    public async Task<PagedResult<TaskItem>> ListTasksAsync(
+        TaskListQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        if (query.Status.HasValue && !Enum.IsDefined(query.Status.Value))
+        {
+            throw new ArgumentOutOfRangeException(nameof(query), query.Status, "Unknown task status.");
+        }
+
+        var effectivePageSize = Math.Clamp(query.PageSize, TaskListQuery.MinPageSize, TaskListQuery.MaxPageSize);
+
+        var dbQuery = dbContext.Tasks.AsNoTracking().Where(t => t.AssigneeId == query.AssigneeId);
+
+        if (query.Status.HasValue)
+        {
+            dbQuery = dbQuery.Where(t => t.Status == query.Status.Value);
+        }
+
+        if (query.CreatorId.HasValue)
+        {
+            dbQuery = dbQuery.Where(t => t.CreatorId == query.CreatorId.Value);
+        }
+
+        if (query.DueFrom.HasValue)
+        {
+            dbQuery = dbQuery.Where(t => t.DueAt >= query.DueFrom.Value);
+        }
+
+        if (query.DueTo.HasValue)
+        {
+            dbQuery = dbQuery.Where(t => t.DueAt <= query.DueTo.Value);
+        }
+
+        if (query.Cursor is not null)
+        {
+            if (query.Cursor.DueAt.HasValue)
+            {
+                var cursorDueAt = query.Cursor.DueAt.Value;
+                var cursorId = query.Cursor.Id;
+                dbQuery = dbQuery.Where(t =>
+                    t.DueAt > cursorDueAt ||
+                    (t.DueAt == cursorDueAt && t.Id > cursorId) ||
+                    t.DueAt == null);
+            }
+            else
+            {
+                var cursorId = query.Cursor.Id;
+                dbQuery = dbQuery.Where(t => t.DueAt == null && t.Id > cursorId);
+            }
+        }
+
+        var items = await dbQuery
+            .OrderBy(t => t.DueAt)
+            .ThenBy(t => t.Id)
+            .Take(effectivePageSize + 1)
+            .ToListAsync(cancellationToken);
+
+        TaskCursor? nextCursor = null;
+        if (items.Count > effectivePageSize)
+        {
+            items.RemoveAt(items.Count - 1);
+            var lastItem = items[^1];
+            nextCursor = new TaskCursor(lastItem.DueAt, lastItem.Id);
+        }
+
+        return new PagedResult<TaskItem>(items, nextCursor);
+    }
+
+    /// <summary>
     /// Lists the tasks assigned to an employee, most-imminent deadline first.
     /// </summary>
     /// <param name="assigneeId">The identifier of the assignee.</param>
@@ -187,23 +252,16 @@ public sealed class TaskService
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="status"/> has a value that is not a defined <see cref="TaskItemStatus"/> member.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+    /// <remarks>
+    /// Convenience overload delegating to <see cref="ListTasksAsync(TaskListQuery, CancellationToken)"/>.
+    /// </remarks>
     public async Task<IReadOnlyList<TaskItem>> ListTasksByAssigneeAsync(
         Guid assigneeId,
         TaskItemStatus? status = null,
         CancellationToken cancellationToken = default)
     {
-        if (status.HasValue && !Enum.IsDefined(status.Value))
-        {
-            throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown task status.");
-        }
-
-        var query = dbContext.Tasks.AsNoTracking().Where(t => t.AssigneeId == assigneeId);
-
-        if (status.HasValue)
-        {
-            query = query.Where(t => t.Status == status.Value);
-        }
-
-        return await query.OrderBy(t => t.DueAt).ThenBy(t => t.Id).ToListAsync(cancellationToken);
+        return status.HasValue && !Enum.IsDefined(status.Value)
+            ? throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown task status.")
+            : await ListTasksAsync(new TaskListQuery(assigneeId, status), cancellationToken);
     }
 }

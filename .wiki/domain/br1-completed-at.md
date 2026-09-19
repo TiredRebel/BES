@@ -1,22 +1,24 @@
 ---
-title: "BR1: CompletedAt is set iff status is Completed"
+title: "BR1: CompletedAt встановлюється тоді й тільки тоді, коли статус = Completed"
 type: rule
 status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[task-item]]", "[[br4-final-statuses]]"]
 ---
 
-# BR1: `CompletedAt` is required when, and only when, status = `Completed`
+# BR1: `CompletedAt` обов'язковий тоді й тільки тоді, коли статус = `Completed`
 
-| Layer | Where (implemented: domain at fan-in A, database and service at fan-in B) | How |
+[ **Українська** ] · [ English ](br1-completed-at.en.md)
+
+| Рівень | Де (реалізовано: домен на fan-in A, база даних та сервіс на fan-in B) | Як |
 |---|---|---|
-| Domain | `TaskItem.Create`, `TaskItem.ChangeStatus` in `src/TaskManagement.Domain/TaskItem.cs` | Structural: `Create` sets `CompletedAt = null`; `ChangeStatus` sets `CompletedAt = changedAt.ToUniversalTime()` when the new status is `Completed` and `null` otherwise. No setter is public, so the API cannot express a violation and nothing throws. BR4 keeps a final task's value frozen. |
-| Database | `ck_tasks_br1_completed_at_iff_completed` on `tasks` | `(status = 'Completed' AND completed_at IS NOT NULL) OR (status <> 'Completed' AND completed_at IS NULL)` → SqlState `23514` |
-| Application | `TaskService.ChangeTaskStatusAsync` | passes `timeProvider.GetUtcNow()` as `changedAt` |
+| Домен | `TaskItem.Create`, `TaskItem.ChangeStatus` у `src/TaskManagement.Domain/TaskItem.cs` | Структурно: `Create` встановлює `CompletedAt = null`; `ChangeStatus` встановлює `CompletedAt = changedAt.ToUniversalTime()`, коли новий статус `Completed`, та `null` в інших випадках. Публічні сетери відсутні, тому API не може виразити порушення і нічого не викидає. BR4 зберігає значення фінального завдання незмінним. |
+| База даних | `ck_tasks_br1_completed_at_iff_completed` на `tasks` | `(status = 'Completed' AND completed_at IS NOT NULL) OR (status <> 'Completed' AND completed_at IS NULL)` → SqlState `23514` |
+| Прикладний сервіс | `TaskService.ChangeTaskStatusAsync` | передає `timeProvider.GetUtcNow()` як `changedAt` |
 
-Tests ([[spec]] §15): `Create_ValidInput_StartsAsNewWithNullCompletedAt`, `ChangeStatus_TransitionTableRow_BehavesAsSpecified`,
+Тести ([[spec]] §15): `Create_ValidInput_StartsAsNewWithNullCompletedAt`, `ChangeStatus_TransitionTableRow_BehavesAsSpecified`,
 `ChangeStatus_ToCompleted_SetsCompletedAtToChangedAt`, `ChangeStatus_ToCompletedWithNonUtcOffset_StoresUtcInstant`,
 `Insert_CompletedWithoutCompletedAt_RejectedByBR1Check`, `Insert_NewWithCompletedAt_RejectedByBR1Check`,
 `Update_ClearCompletedAtOfCompletedTask_RejectedByBR1Check`, `ChangeTaskStatusAsync_NewToCompleted_PersistsStatusAndCompletedAt`.
 
-Red evidence at FA: remove the `CompletedAt = …` assignment in `ChangeStatus`.
+Red evidence на FA: видалення присвоєння `CompletedAt = …` у `ChangeStatus`.

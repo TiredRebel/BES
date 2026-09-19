@@ -1,48 +1,44 @@
 ---
-title: TaskItem (entity) and TaskItemStatus (enum)
+title: TaskItem (сутність) та TaskItemStatus (перелік)
 type: entity
 status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[employee]]", "[[br1-completed-at]]", "[[br2-due-not-before-start]]", "[[br3-inactive-assignee]]", "[[br4-final-statuses]]", "[[br5-no-self-assignment]]"]
 ---
 
-# TaskItem
+# Завдання (TaskItem)
 
-A unit of work created by one employee and assigned to another. Named `TaskItem` (not `Task`) and its status enum
-`TaskItemStatus` (not `TaskStatus`) to avoid `System.Threading.Tasks`. Full contract: [[spec]] §3.2–§3.4, §5, §10–§12.
+[ **Українська** ] · [ English ](task-item.en.md)
 
-- Code: `src/TaskManagement.Domain/TaskItem.cs`, `TaskItemStatus.cs`, `BusinessRuleViolationException.cs`
-  (implemented at fan-in A; tests in `tests/TaskManagement.UnitTests/TaskItemCreateTests.cs` and
-  `TaskItemChangeStatusTests.cs`). Implemented at fan-in B: mapping in `src/TaskManagement.Infrastructure/Configurations/TaskItemConfiguration.cs`;
-  use cases in `src/TaskManagement.Application/TaskService.cs`.
-- Table: `tasks`, PK `pk_tasks`.
+Одиниця роботи, створена одним співробітником і призначена іншому. Названа `TaskItem` (а не `Task`), а її перелік статусів — `TaskItemStatus` (а не `TaskStatus`), щоб уникнути колізій з `System.Threading.Tasks`. Повний контракт: [[spec]] §3.2–§3.4, §5, §10–§12.
 
-| Property | CLR type | Column | Rules |
+- **Код**: `src/TaskManagement.Domain/TaskItem.cs`, `TaskItemStatus.cs`, `BusinessRuleViolationException.cs` (реалізовано на fan-in A; тести в `tests/TaskManagement.UnitTests/TaskItemCreateTests.cs` та `TaskItemChangeStatusTests.cs`). Мапінг: `src/TaskManagement.Infrastructure/Configurations/TaskItemConfiguration.cs`; сервіс: `src/TaskManagement.Application/TaskService.cs`.
+- **Таблиця**: `tasks`, PK `pk_tasks`.
+
+| Властивість | CLR-тип | Колонка | Правила |
 |---|---|---|---|
-| `Id` | `Guid` | `id uuid` | `Guid.CreateVersion7()` in `Create` |
-| `Title` | `string` | `title varchar(200)` | required, trimmed, max `TitleMaxLength` = 200 |
-| `Status` | `TaskItemStatus` | `status varchar(20)` | `New` on create; text; `ck_tasks_status_valid` |
+| `Id` | `Guid` | `id uuid` | `Guid.CreateVersion7()` у `Create` |
+| `Title` | `string` | `title varchar(200)` | обов'язкове, обрізаються пробіли, максимум `TitleMaxLength` = 200 |
+| `Status` | `TaskItemStatus` | `status varchar(20)` | `New` при створенні; зберігається як текст; `ck_tasks_status_valid` |
 | `CreatorId` | `Guid` | `creator_id uuid` | FK `fk_tasks_employees_creator_id`, RESTRICT |
-| `AssigneeId` | `Guid` | `assignee_id uuid` | FK `fk_tasks_employees_assignee_id`, RESTRICT; ≠ `CreatorId` ([[br5-no-self-assignment]]); set once |
+| `AssigneeId` | `Guid` | `assignee_id uuid` | FK `fk_tasks_employees_assignee_id`, RESTRICT; ≠ `CreatorId` ([[br5-no-self-assignment]]); встановлюється один раз |
 | `PlannedStartAt` | `DateTimeOffset?` | `planned_start_at timestamptz` | UTC ([[br2-due-not-before-start]]) |
-| `DueAt` | `DateTimeOffset?` | `due_at timestamptz` | UTC, the deadline, ≥ `PlannedStartAt` when both set |
-| `CompletedAt` | `DateTimeOffset?` | `completed_at timestamptz` | set iff `Completed` ([[br1-completed-at]]) |
-| `Version` | `uint` | `xmin` (system) | concurrency token; never written by the domain |
+| `DueAt` | `DateTimeOffset?` | `due_at timestamptz` | UTC, дедлайн, ≥ `PlannedStartAt`, коли обидва встановлені |
+| `CompletedAt` | `DateTimeOffset?` | `completed_at timestamptz` | встановлюється тоді й тільки тоді, коли статус = `Completed` ([[br1-completed-at]]) |
+| `Version` | `uint` | `xmin` (system) | токен конкурентності; ніколи не записується доменом |
 
-## Operations
+## Операції
 
-- `TaskItem.Create(string title, Employee creator, Employee assignee, DateTimeOffset? plannedStartAt, DateTimeOffset? dueAt)`
-  guards in order: title, null employees, UTC normalisation, BR5, BR3, BR2.
-- `ChangeStatus(TaskItemStatus newStatus, DateTimeOffset changedAt)`: unknown enum value, then BR4, then no-op if
-  unchanged, then apply (sets or clears `CompletedAt`, BR1).
-- There is no reassign, rename, reschedule or delete operation: the brief's use cases do not need one.
+- `TaskItem.Create(string title, Employee creator, Employee assignee, DateTimeOffset? plannedStartAt, DateTimeOffset? dueAt)`:
+  перевірки за порядком: заголовок, ненульові співробітники, нормалізація до UTC, BR5, BR3, BR2.
+- `ChangeStatus(TaskItemStatus newStatus, DateTimeOffset changedAt)`:
+  перевірка значення переліку, потім BR4, потім no-op якщо без змін, потім застосування (встановлює або очищує `CompletedAt`, BR1).
+- Операції перепризначення, перейменування, перенесення термінів або видалення відсутні: сценарії завдання цього не вимагають.
 
-## Statuses
+## Статуси
 
-`New = 0`, `InProgress = 1`, `Completed = 2`, `Cancelled = 3`. `Completed` and `Cancelled` are final
-([[br4-final-statuses]]). Any change from `New` or `InProgress` is allowed, including to the same status (no-op).
-The 16-row table is in [[spec]] §5.
+`New = 0`, `InProgress = 1`, `Completed = 2`, `Cancelled = 3`. `Completed` та `Cancelled` є фінальними ([[br4-final-statuses]]). Будь-яка зміна зі статусів `New` або `InProgress` дозволена, включно з переходом у той самий статус (no-op). Таблиця на 16 переходів наведена в [[spec]] §5.
 
-## Indexes
+## Індекси
 
-`ix_tasks_assignee_id_status` (assignee + status), `ix_tasks_due_at` (deadline), `ix_tasks_creator_id` (FK).
+`ix_tasks_assignee_id_status` (виконавець + статус), `ix_tasks_due_at` (дедлайн), `ix_tasks_creator_id` (FK автора).

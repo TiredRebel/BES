@@ -115,20 +115,20 @@ public sealed class MigrationAndSeedTests : IAsyncLifetime
     {
         var employees = await _dbContext!.Employees.AsNoTracking().ToListAsync();
 
-        var alice = Assert.Single(employees, e => e.Id == Guid.Parse("10000000-0000-0000-0000-000000000001"));
-        Assert.Equal("Alice Morgan", alice.FullName);
-        Assert.Equal("alice.morgan@example.com", alice.Email);
-        Assert.True(alice.IsActive);
+        var olena = Assert.Single(employees, e => e.Id == Guid.Parse("10000000-0000-0000-0000-000000000001"));
+        Assert.Equal("Олена Коваленко", olena.FullName);
+        Assert.Equal("olena.kovalenko@example.com", olena.Email);
+        Assert.True(olena.IsActive);
 
-        var bob = Assert.Single(employees, e => e.Id == Guid.Parse("10000000-0000-0000-0000-000000000002"));
-        Assert.Equal("Bob Chen", bob.FullName);
-        Assert.Equal("bob.chen@example.com", bob.Email);
-        Assert.True(bob.IsActive);
+        var bohdan = Assert.Single(employees, e => e.Id == Guid.Parse("10000000-0000-0000-0000-000000000002"));
+        Assert.Equal("Богдан Шевченко", bohdan.FullName);
+        Assert.Equal("bohdan.shevchenko@example.com", bohdan.Email);
+        Assert.True(bohdan.IsActive);
 
-        var carol = Assert.Single(employees, e => e.Id == Guid.Parse("10000000-0000-0000-0000-000000000003"));
-        Assert.Equal("Carol Diaz", carol.FullName);
-        Assert.Equal("carol.diaz@example.com", carol.Email);
-        Assert.False(carol.IsActive);
+        var oksana = Assert.Single(employees, e => e.Id == Guid.Parse("10000000-0000-0000-0000-000000000003"));
+        Assert.Equal("Оксана Мельник", oksana.FullName);
+        Assert.Equal("oksana.melnyk@example.com", oksana.Email);
+        Assert.False(oksana.IsActive);
 
         Assert.Equal(3, employees.Count);
     }
@@ -141,32 +141,32 @@ public sealed class MigrationAndSeedTests : IAsyncLifetime
     public async Task Seed_Tasks_MatchSpec()
     {
         var tasks = await _dbContext!.Tasks.AsNoTracking().ToListAsync();
-        var aliceId = Guid.Parse("10000000-0000-0000-0000-000000000001");
-        var bobId = Guid.Parse("10000000-0000-0000-0000-000000000002");
+        var olenaId = Guid.Parse("10000000-0000-0000-0000-000000000001");
+        var bohdanId = Guid.Parse("10000000-0000-0000-0000-000000000002");
 
         var report = Assert.Single(tasks, t => t.Id == Guid.Parse("20000000-0000-0000-0000-000000000001"));
-        Assert.Equal("Prepare Q4 sales report", report.Title);
+        Assert.Equal("Підготувати квартальний звіт з продажів", report.Title);
         Assert.Equal(TaskItemStatus.New, report.Status);
-        Assert.Equal(aliceId, report.CreatorId);
-        Assert.Equal(bobId, report.AssigneeId);
+        Assert.Equal(olenaId, report.CreatorId);
+        Assert.Equal(bohdanId, report.AssigneeId);
         Assert.Equal(new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero), report.PlannedStartAt);
         Assert.Equal(new DateTimeOffset(2026, 10, 10, 17, 0, 0, TimeSpan.Zero), report.DueAt);
         Assert.Null(report.CompletedAt);
 
         var callBack = Assert.Single(tasks, t => t.Id == Guid.Parse("20000000-0000-0000-0000-000000000002"));
-        Assert.Equal("Call back key account", callBack.Title);
+        Assert.Equal("Передзвонити ключовому клієнту", callBack.Title);
         Assert.Equal(TaskItemStatus.Completed, callBack.Status);
-        Assert.Equal(bobId, callBack.CreatorId);
-        Assert.Equal(aliceId, callBack.AssigneeId);
+        Assert.Equal(bohdanId, callBack.CreatorId);
+        Assert.Equal(olenaId, callBack.AssigneeId);
         Assert.Equal(new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero), callBack.PlannedStartAt);
         Assert.Equal(new DateTimeOffset(2026, 9, 5, 17, 0, 0, TimeSpan.Zero), callBack.DueAt);
         Assert.Equal(new DateTimeOffset(2026, 9, 4, 15, 30, 0, TimeSpan.Zero), callBack.CompletedAt);
 
         var cleanup = Assert.Single(tasks, t => t.Id == Guid.Parse("20000000-0000-0000-0000-000000000003"));
-        Assert.Equal("Clean up duplicate contacts", cleanup.Title);
+        Assert.Equal("Очистити дублікати контактів", cleanup.Title);
         Assert.Equal(TaskItemStatus.Cancelled, cleanup.Status);
-        Assert.Equal(aliceId, cleanup.CreatorId);
-        Assert.Equal(bobId, cleanup.AssigneeId);
+        Assert.Equal(olenaId, cleanup.CreatorId);
+        Assert.Equal(bohdanId, cleanup.AssigneeId);
         Assert.Null(cleanup.PlannedStartAt);
         Assert.Null(cleanup.DueAt);
         Assert.Null(cleanup.CompletedAt);

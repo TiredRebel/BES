@@ -68,16 +68,16 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.HasIndex(t => t.DueAt).HasDatabaseName("ix_tasks_due_at");
         builder.HasIndex(t => t.CreatorId).HasDatabaseName("ix_tasks_creator_id");
 
-        var alice = new Guid("10000000-0000-0000-0000-000000000001");
-        var bob = new Guid("10000000-0000-0000-0000-000000000002");
+        var olena = new Guid("10000000-0000-0000-0000-000000000001");
+        var bohdan = new Guid("10000000-0000-0000-0000-000000000002");
         builder.HasData(
             new
             {
                 Id = new Guid("20000000-0000-0000-0000-000000000001"),
-                Title = "Prepare Q4 sales report",
+                Title = "Підготувати квартальний звіт з продажів",
                 Status = TaskItemStatus.New,
-                CreatorId = alice,
-                AssigneeId = bob,
+                CreatorId = olena,
+                AssigneeId = bohdan,
                 PlannedStartAt = (DateTimeOffset?)new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero),
                 DueAt = (DateTimeOffset?)new DateTimeOffset(2026, 10, 10, 17, 0, 0, TimeSpan.Zero),
                 CompletedAt = (DateTimeOffset?)null,
@@ -85,10 +85,10 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             new
             {
                 Id = new Guid("20000000-0000-0000-0000-000000000002"),
-                Title = "Call back key account",
+                Title = "Передзвонити ключовому клієнту",
                 Status = TaskItemStatus.Completed,
-                CreatorId = bob,
-                AssigneeId = alice,
+                CreatorId = bohdan,
+                AssigneeId = olena,
                 PlannedStartAt = (DateTimeOffset?)new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero),
                 DueAt = (DateTimeOffset?)new DateTimeOffset(2026, 9, 5, 17, 0, 0, TimeSpan.Zero),
                 CompletedAt = (DateTimeOffset?)new DateTimeOffset(2026, 9, 4, 15, 30, 0, TimeSpan.Zero),
@@ -96,10 +96,10 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             new
             {
                 Id = new Guid("20000000-0000-0000-0000-000000000003"),
-                Title = "Clean up duplicate contacts",
+                Title = "Очистити дублікати контактів",
                 Status = TaskItemStatus.Cancelled,
-                CreatorId = alice,
-                AssigneeId = bob,
+                CreatorId = olena,
+                AssigneeId = bohdan,
                 PlannedStartAt = (DateTimeOffset?)null,
                 DueAt = (DateTimeOffset?)null,
                 CompletedAt = (DateTimeOffset?)null,

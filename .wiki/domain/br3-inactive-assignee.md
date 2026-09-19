@@ -1,29 +1,27 @@
 ---
-title: "BR3: an inactive employee can't be given a new task"
+title: "BR3: неактивному співробітнику не можна призначити нове завдання"
 type: rule
 status: approved
 updated: 2026-09-18
 related: ["[[spec]]", "[[employee]]", "[[task-item]]"]
 ---
 
-# BR3: an inactive employee can't be given a new task
+# BR3: неактивному співробітнику не можна призначити нове завдання
 
-"Given a new task" means: a `TaskItem` is created with that employee as `AssigneeId`. Creation is the only time
-`AssigneeId` is set (no reassignment), so BR3 is checked at creation, in two places as the brief requires.
-The creator's status is not checked, and tasks an employee already had before deactivation stay valid.
+[ **Українська** ] · [ English ](br3-inactive-assignee.en.md)
 
-| Layer | Where (implemented: domain at fan-in A, database and service at fan-in B) | How |
+"Призначити нове завдання" означає: створюється `TaskItem`, де цей співробітник є `AssigneeId`. Створення — це єдиний момент, коли встановлюється `AssigneeId` (перепризначення відсутнє), тому BR3 перевіряється при створенні у двох місцях, як того вимагає технічне завдання.
+Статус автора не перевіряється, а завдання, які співробітник уже мав до деактивації, залишаються дійсними.
+
+| Рівень | Де (реалізовано: домен на fan-in A, база даних та сервіс на fan-in B) | Як |
 |---|---|---|
-| Application | `TaskService.CreateTaskAsync` in `src/TaskManagement.Application/TaskService.cs` | loads the assignee row, `!IsActive` → `BusinessRuleViolationException` (`RuleId == "BR3"`) before calling the domain |
-| Domain | `TaskItem.Create` (guard 6) | `!assignee.IsActive` → same exception, so no caller can skip it |
-| Database | trigger `trg_tasks_br3_br4` on insert (in `src/TaskManagement.Infrastructure/Migrations/20260918164447_InitialCreate.cs`) | reads the assignee's `is_active` under `FOR SHARE`; an inactive assignee → `23514` / `trg_tasks_br3_assignee_active`; the service rethrows it as `BusinessRuleViolationException("BR3")` ([ADR 0009](../../docs/adr/0009-br3-br4-enforced-by-trigger.md)) |
+| Прикладний сервіс | `TaskService.CreateTaskAsync` у `src/TaskManagement.Application/TaskService.cs` | завантажує рядок виконавця, `!IsActive` → `BusinessRuleViolationException` (`RuleId == "BR3"`) перед викликом домену |
+| Домен | `TaskItem.Create` (guard 6) | `!assignee.IsActive` → той самий виняток, тому жоден клієнт не може оминути перевірку |
+| База даних | тригер `trg_tasks_br3_br4` на insert (у `src/TaskManagement.Infrastructure/Migrations/20260918164447_InitialCreate.cs`) | читає `is_active` виконавця під `FOR SHARE`; неактивний виконавець → `23514` / `trg_tasks_br3_assignee_active`; сервіс перехоплює і повторно викидає як `BusinessRuleViolationException("BR3")` ([ADR 0009](../../docs/adr/0009-br3-br4-enforced-by-trigger.md)) |
 
-The trigger's `FOR SHARE` lock closes the race between the service's read and its insert: a concurrent deactivation
-waits for the insert, and a deactivation committed before it makes the insert fail as BR3.
+Блокування тригера `FOR SHARE` закриває стан гонитви між читанням сервісу та його вставкою: паралельна деактивація чекає завершення вставки, а деактивація, зафіксована до вставки, призводить до помилки BR3.
 
-Tests ([[spec]] §15): `Create_InactiveAssignee_ThrowsBusinessRuleViolationBR3`, `Create_InactiveCreatorActiveAssignee_Succeeds`,
+Тести ([[spec]] §15): `Create_InactiveAssignee_ThrowsBusinessRuleViolationBR3`, `Create_InactiveCreatorActiveAssignee_Succeeds`,
 `Insert_TaskForInactiveAssignee_RejectedByBR3Trigger`, `Insert_TaskForUnknownAssignee_RejectedByForeignKeyNotBR3Trigger`,
 `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger`, `CreateTaskAsync_InactiveAssignee_ThrowsBR3AndPersistsNothing`,
-`CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck` (proves the service half). Precondition
-(not a BR3 test): `Deactivate_ActiveEmployee_SetsIsActiveFalse`. Seed employee Carol,
-`10000000-0000-0000-0000-000000000003`, is inactive.
+`CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck` (доводить перевірку сервісу). Передумова (не є тестом BR3): `Deactivate_ActiveEmployee_SetsIsActiveFalse`. Співробітниця Carol, `10000000-0000-0000-0000-000000000003`, є неактивною.

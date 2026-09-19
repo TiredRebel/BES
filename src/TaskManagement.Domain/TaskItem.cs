@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+
 namespace TaskManagement.Domain;
 
 /// <summary>
@@ -7,6 +9,15 @@ public sealed class TaskItem
 {
     /// <summary>The maximum length of <see cref="Title"/>.</summary>
     public const int TitleMaxLength = 200;
+
+    private static readonly FrozenDictionary<TaskItemStatus, FrozenSet<TaskItemStatus>> AllowedTransitions =
+        new Dictionary<TaskItemStatus, HashSet<TaskItemStatus>>
+        {
+            [TaskItemStatus.New] = [TaskItemStatus.New, TaskItemStatus.InProgress, TaskItemStatus.Completed, TaskItemStatus.Cancelled],
+            [TaskItemStatus.InProgress] = [TaskItemStatus.New, TaskItemStatus.InProgress, TaskItemStatus.Completed, TaskItemStatus.Cancelled],
+            [TaskItemStatus.Completed] = [],
+            [TaskItemStatus.Cancelled] = []
+        }.ToFrozenDictionary(k => k.Key, v => v.Value.ToFrozenSet());
 
     private TaskItem()
     {
@@ -96,22 +107,19 @@ public sealed class TaskItem
                 $"BR3: Employee {assignee.Id} is inactive and cannot be given a new task.");
         }
 
-        if (normalisedPlannedStartAt is not null && normalisedDueAt is not null && normalisedDueAt < normalisedPlannedStartAt)
-        {
-            throw new BusinessRuleViolationException("BR2", "BR2: DueAt cannot be earlier than PlannedStartAt.");
-        }
-
-        return new TaskItem
-        {
-            Id = Guid.CreateVersion7(),
-            Title = trimmedTitle,
-            Status = TaskItemStatus.New,
-            CreatorId = creator.Id,
-            AssigneeId = assignee.Id,
-            PlannedStartAt = normalisedPlannedStartAt,
-            DueAt = normalisedDueAt,
-            CompletedAt = null,
-        };
+        return normalisedPlannedStartAt is not null && normalisedDueAt is not null && normalisedDueAt < normalisedPlannedStartAt
+            ? throw new BusinessRuleViolationException("BR2", "BR2: DueAt cannot be earlier than PlannedStartAt.")
+            : new TaskItem
+            {
+                Id = Guid.CreateVersion7(),
+                Title = trimmedTitle,
+                Status = TaskItemStatus.New,
+                CreatorId = creator.Id,
+                AssigneeId = assignee.Id,
+                PlannedStartAt = normalisedPlannedStartAt,
+                DueAt = normalisedDueAt,
+                CompletedAt = null,
+            };
     }
 
     /// <summary>
@@ -133,7 +141,7 @@ public sealed class TaskItem
             throw new ArgumentOutOfRangeException(nameof(newStatus), newStatus, "Unknown task status.");
         }
 
-        if (Status is TaskItemStatus.Completed or TaskItemStatus.Cancelled)
+        if (!AllowedTransitions.TryGetValue(Status, out var allowed) || !allowed.Contains(newStatus))
         {
             throw new BusinessRuleViolationException(
                 "BR4",

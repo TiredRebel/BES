@@ -345,3 +345,53 @@ Newest entry at the bottom.
   done, newest bus messages, last log entry, recent requests, the final report).
 - Rewrote `.wiki/index.md` "Current state" as the resume block: state, where to resume, the 3 decisions waiting on the
   human, what was closed by documentation, the `[uncertain]` list and next steps. It had stale text from fan-in B.
+
+## 2026-09-19 · Antigravity · session 2 · Cyrillic seed data & recommendation 1.1 (TaskListQuery)
+
+- Cyrillic seed data & PostgreSQL analysis:
+  - Updated seed employees to Ukrainian names ("Олена Коваленко", "Богдан Шевченко", "Оксана Мельник") and tasks to Ukrainian titles ("Підготувати квартальний звіт з продажів", "Передзвонити ключовому клієнту", "Очистити дублікати контактів").
+  - Synchronized `EmployeeConfiguration.cs`, `TaskItemConfiguration.cs`, `InitialCreate.cs`, `InitialCreate.Designer.cs`, `TaskManagementDbContextModelSnapshot.cs`.
+  - Updated integration tests in `MigrationAndSeedTests.cs` and `DatabaseConstraintTests.cs`.
+  - Documented PostgreSQL UTF-8 character length handling and collation.
+- Recommendation 1.1 (Query Object pattern for TaskService):
+  - Created `TaskListQuery.cs` in `TaskManagement.Application` with `AssigneeId`, `Status`, `DueFrom`, `DueTo`, `CreatorId`.
+  - Added `ListTasksAsync(TaskListQuery, CancellationToken)` to `TaskService.cs` with full filtering and ordering.
+  - Refactored `ListTasksByAssigneeAsync` into a backward-compatible wrapper delegating to `ListTasksAsync`.
+  - Added integration tests `ListTasksAsync_NullQuery_ThrowsArgumentNullException`, `ListTasksAsync_WithDueRange_ReturnsOnlyMatchingTasks`, and `ListTasksAsync_WithCreatorId_ReturnsOnlyMatchingTasks` to `TaskServiceTests.cs`.
+  - Updated documentation in `README.md`, `README.en.md`, `.wiki/domain/spec.md`, `.wiki/domain/spec.en.md`.
+- Gates: `dotnet build -warnaserror` → 0 errors, 0 warnings; `dotnet test` → 56/56 unit, 41/41 integration passed.
+
+## 2026-09-19 · Antigravity · session 2 · Recommendation 2.1 (Keyset/Cursor-Based Pagination)
+
+- Recommendation 2.1 (Keyset pagination for TaskService):
+  - Created `TaskCursor.cs` (`DueAt`, `Id`) for cursor-based pagination.
+  - Created `PagedResult<T>.cs` implementing `IReadOnlyList<T>` with `Items`, `NextCursor`, and `HasNextPage`.
+  - Updated `TaskListQuery.cs` with `PageSize` (default 50, clamped between 1 and 100) and `Cursor`.
+  - Updated `TaskService.ListTasksAsync` to clamp page size with `Math.Clamp`, apply keyset filtering on `(DueAt, Id)` including nulls-last transitions, fetch `PageSize + 1` rows to calculate `nextCursor`, and return `PagedResult<TaskItem>`.
+  - Added 4 integration tests in `TaskServiceTests.cs` verifying first-page retrieval, second-page cursor navigation, and page size clamping.
+  - Updated documentation in `README.md`, `README.en.md`, `.wiki/domain/spec.md`, `.wiki/domain/spec.en.md`.
+- Gates: `dotnet build -warnaserror` → 0 errors, 0 warnings; `dotnet test` → 56/56 unit, 45/45 integration passed.
+
+## 2026-09-19 · Antigravity · session 2 · FSM State Pattern & TASKDETAIL.md
+
+- FSM State Pattern in `TaskItem.ChangeStatus`:
+  - Refactored `TaskItem.cs` to use `FrozenDictionary<TaskItemStatus, FrozenSet<TaskItemStatus>> AllowedTransitions`.
+  - Replaced manual branch check with immutable transition matrix lookup.
+  - Verified all 16 transition test matrix rows pass cleanly in `TaskItemChangeStatusTests`.
+- Architectural Documentation (`TASKDETAIL.md` / `TASKDEATAIL.md`):
+  - Authored comprehensive architectural document detailing the Clean Architecture, BR1–BR5 defense-in-depth, FSM pattern, database vs C# string validation (2.3), soft delete / cold data archiving (2.4), and high-load optimizations (3.1 keyset pagination, 3.2 partitioning, 3.3 bulk operations).
+- Documentation Links:
+  - Updated `README.md` and `README.en.md` to turn all plain-text documentation references into clickable markdown links (`TASKDETAIL.md`, `AGENTS.md`, `.wiki/index.md`, `.wiki/domain/spec.md`, business rule pages, `docs/adr/`).
+## 2026-09-19 · Antigravity · session 2 · Engineering Decision Process Document (README.md v1.0)
+
+- Replaced root `README.md` with the comprehensive engineering decision-making document v1.0:
+  - Structured across 4 professional perspectives: Analyst, Architect, Engineer, Implementer/QA + Conclusions.
+  - Articulated core rationale: .NET 10 LTS vs STS, PostgreSQL 17, YAGNI trade-off with compiler guardrails, Rich Domain Model, GUID v7 vs v4, OCC via `xmin`, FSM with BDD and `FrozenDictionary`, Defense in Depth, no cargo-cult `ITaskService`, Keyset pagination with `NULLS LAST`, seed data rationale, Testcontainers vs In-Memory, and multi-agent AI infrastructure (Lead-Orchestrator-Workers, tokenomics, context engineering, adaptive hooks).
+- Preserved previous technical documentation:
+  - Renamed previous Ukrainian technical readme to `README.uk.md`.
+  - Updated navigation links across `README.md`, `README.uk.md`, and `README.en.md`.
+- CodeGraph synced via `codegraph sync .`.
+- Gates: `dotnet build -warnaserror` → 0 errors, 0 warnings.
+- Section 5 "Production Readiness" added to `README.md` v1.0.
+- Workspace root renamed to `E:\BES TT`; all configuration references updated.
+

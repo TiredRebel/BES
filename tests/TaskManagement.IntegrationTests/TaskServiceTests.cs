@@ -302,6 +302,140 @@ public sealed class TaskServiceTests : IAsyncLifetime
             () => service.ListTasksByAssigneeAsync(BobId, (TaskItemStatus)99));
     }
 
+    /// <summary>Verifies that passing a null query object raises <see cref="ArgumentNullException"/>.</summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksAsync_NullQuery_ThrowsArgumentNullException()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => service.ListTasksAsync(null!));
+    }
+
+    /// <summary>
+    /// Verifies that filtering tasks with a date range restricts results to deadlines within that interval.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksAsync_WithDueRange_ReturnsOnlyMatchingTasks()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+
+        await _dbContext!.Database.ExecuteSqlRawAsync(
+            "INSERT INTO tasks (id, title, status, creator_id, assignee_id, planned_start_at, due_at, completed_at) VALUES " +
+            "('30000000-0000-0000-0000-000000000201', 'Early task', 'New', '10000000-0000-0000-0000-000000000001', " +
+            "'10000000-0000-0000-0000-000000000002', '2026-09-01T09:00:00+00:00', '2026-09-15T17:00:00+00:00', NULL), " +
+            "('30000000-0000-0000-0000-000000000202', 'Late task', 'New', '10000000-0000-0000-0000-000000000001', " +
+            "'10000000-0000-0000-0000-000000000002', '2026-11-01T09:00:00+00:00', '2026-11-15T17:00:00+00:00', NULL)");
+
+        var query = new TaskListQuery(
+            AssigneeId: BobId,
+            DueFrom: new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero),
+            DueTo: new DateTimeOffset(2026, 10, 31, 23, 59, 59, TimeSpan.Zero));
+
+        var tasks = await service.ListTasksAsync(query);
+
+        var task = Assert.Single(tasks);
+        Assert.Equal(Guid.Parse("20000000-0000-0000-0000-000000000001"), task.Id);
+    }
+
+    /// <summary>
+    /// Verifies that filtering tasks by creator returns only tasks created by that specific employee.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksAsync_WithCreatorId_ReturnsOnlyMatchingTasks()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+
+        await _dbContext!.Database.ExecuteSqlRawAsync(
+            "INSERT INTO employees (id, full_name, email, is_active) VALUES " +
+            "('10000000-0000-0000-0000-000000000004', 'Dan Smith', 'dan.smith@example.com', true) " +
+            "ON CONFLICT (id) DO NOTHING; " +
+            "INSERT INTO tasks (id, title, status, creator_id, assignee_id, planned_start_at, due_at, completed_at) VALUES " +
+            "('30000000-0000-0000-0000-000000000203', 'Dan created task', 'New', '10000000-0000-0000-0000-000000000004', " +
+            "'10000000-0000-0000-0000-000000000002', NULL, NULL, NULL)");
+
+        var query = new TaskListQuery(AssigneeId: BobId, CreatorId: DanId);
+
+        var tasks = await service.ListTasksAsync(query);
+
+        var task = Assert.Single(tasks);
+        Assert.Equal(Guid.Parse("30000000-0000-0000-0000-000000000203"), task.Id);
+    }
+
+    /// <summary>
+    /// Verifies keyset pagination: requesting a page smaller than the total item count returns only that many
+    /// items, signals <see cref="PagedResult{T}.HasNextPage"/> as <see langword="true"/>, and produces a valid cursor.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksAsync_Pagination_ReturnsFirstPageAndNextCursor()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+
+        var query = new TaskListQuery(AssigneeId: BobId, PageSize: 1);
+
+        var page = await service.ListTasksAsync(query);
+
+        Assert.Single(page);
+        Assert.True(page.HasNextPage);
+        Assert.NotNull(page.NextCursor);
+        Assert.Equal(page[0].DueAt, page.NextCursor.DueAt);
+        Assert.Equal(page[0].Id, page.NextCursor.Id);
+    }
+
+    /// <summary>
+    /// Verifies that querying with the cursor returned from page 1 retrieves the next page without duplicating
+    /// page 1's items.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksAsync_Pagination_SecondPageUsingCursor_ReturnsRemainingItems()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+
+        var page1 = await service.ListTasksAsync(new TaskListQuery(AssigneeId: BobId, PageSize: 1));
+        Assert.True(page1.HasNextPage);
+        Assert.NotNull(page1.NextCursor);
+
+        var page2 = await service.ListTasksAsync(new TaskListQuery(AssigneeId: BobId, PageSize: 10, Cursor: page1.NextCursor));
+
+        Assert.NotEmpty(page2);
+        Assert.DoesNotContain(page2, t => t.Id == page1[0].Id);
+    }
+
+    /// <summary>
+    /// Verifies that specifying a page size of zero or less is clamped to <see cref="TaskListQuery.MinPageSize"/> (1).
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksAsync_PageSizeClamped_ZeroOrNegativeClampedTo1()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+
+        var page = await service.ListTasksAsync(new TaskListQuery(AssigneeId: BobId, PageSize: -5));
+
+        Assert.Single(page);
+    }
+
+    /// <summary>
+    /// Verifies that specifying a page size exceeding <see cref="TaskListQuery.MaxPageSize"/> (100) is accepted
+    /// and clamped without throwing.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksAsync_PageSizeClamped_ExceedingMaxClampedTo100()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+
+        var page = await service.ListTasksAsync(new TaskListQuery(AssigneeId: BobId, PageSize: 500));
+
+        Assert.NotEmpty(page);
+        Assert.True(page.Count <= TaskListQuery.MaxPageSize);
+    }
+
     /// <summary>
     /// Verifies the BR3 race (grill Q4): the service's query does run, but a context that already tracks Bob keeps
     /// its tracked, stale copy (still active), so only the database trigger catches a deactivation committed after

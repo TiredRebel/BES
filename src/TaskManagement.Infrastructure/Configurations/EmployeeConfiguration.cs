@@ -16,7 +16,7 @@ namespace TaskManagement.Infrastructure.Configurations;
 /// can still insert a differently-cased duplicate (ADR 0005).</item>
 /// </list>
 /// <para>
-/// Seed: Alice Morgan and Bob Chen (active) and Carol Diaz (inactive). Carol exists so BR3 can be tested against
+/// Seed: Олена Коваленко and Богдан Шевченко (active) and Оксана Мельник (inactive). Оксана exists so BR3 can be tested against
 /// the database. No concurrency token: the only mutation (<see cref="Employee.Deactivate"/>) is idempotent.
 /// </para>
 /// </remarks>
@@ -36,8 +36,8 @@ public sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.HasIndex(e => e.Email).IsUnique().HasDatabaseName("ux_employees_email");
 
         builder.HasData(
-            new { Id = new Guid("10000000-0000-0000-0000-000000000001"), FullName = "Alice Morgan", Email = "alice.morgan@example.com", IsActive = true },
-            new { Id = new Guid("10000000-0000-0000-0000-000000000002"), FullName = "Bob Chen", Email = "bob.chen@example.com", IsActive = true },
-            new { Id = new Guid("10000000-0000-0000-0000-000000000003"), FullName = "Carol Diaz", Email = "carol.diaz@example.com", IsActive = false });
+            new { Id = new Guid("10000000-0000-0000-0000-000000000001"), FullName = "Олена Коваленко", Email = "olena.kovalenko@example.com", IsActive = true },
+            new { Id = new Guid("10000000-0000-0000-0000-000000000002"), FullName = "Богдан Шевченко", Email = "bohdan.shevchenko@example.com", IsActive = true },
+            new { Id = new Guid("10000000-0000-0000-0000-000000000003"), FullName = "Оксана Мельник", Email = "oksana.melnyk@example.com", IsActive = false });
     }
 }
