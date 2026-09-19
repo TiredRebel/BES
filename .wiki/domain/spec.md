@@ -9,7 +9,7 @@ related: ["[[employee]]", "[[task-item]]", "[[br1-completed-at]]", "[[br2-due-no
 # Task Management data layer: spec
 
 The contract that A1, A2, B1, B2 and B3 code against in parallel. Every name in `code font` is exact, character for
-character. Every code path here is **planned**: none exists yet. `[uncertain]` marks what was not proven by a file,
+character. Every code path here was planned at N1 and is now implemented (see [[codemap]]). `[uncertain]` marks what was not proven by a file,
 a doc page or a command; section 16 says where everything else was verified.
 
 The module: **Task Management**, the internal CRM module for assigning, executing and controlling employees' tasks.
@@ -350,8 +350,8 @@ and no use case calls it, so there is no lost update to prevent.
 ## 11. Indexes and constraints (complete list)
 
 The migration must contain exactly these, no more (B1 checks the generated `Up()`; if EF adds an unnamed
-`IX_tasks_assignee_id` for the FK despite the composite index covering it, B1 reports it `[uncertain]` rather than
-leaving a default-named index).
+`IX_tasks_assignee_id` for the FK despite the composite index covering it, B1 reports it rather than leaving a
+default-named index). Resolved at B1: the generated `Up()` has no `IX_` index, and `\d tasks` shows exactly the §11 set.
 
 | Name | Table | Kind | Columns / SQL (exact) | Enforces |
 |---|---|---|---|---|
@@ -466,8 +466,7 @@ unique. Carol exists so BR3 can be tested against the database.
 The seed is **demo data** that lives in `InitialCreate` (grill decision Q3(a)), so every database the migration
 runs against gets these rows. D1's README states this in a `## Seed data` section.
 
-B1 confirms two things in the generated `Up()`, both `[uncertain]` until then (the N0 probe seeded one table with
-no value converter): the `InsertData` for `tasks` carries the status as the strings `"New"`, `"Completed"`,
+B1 confirmed two things in the generated `Up()` (the N0 probe had seeded one table with no value converter): the `InsertData` for `tasks` carries the status as the strings `"New"`, `"Completed"`,
 `"Cancelled"` (not integers, which `ck_tasks_status_valid` would reject), and the `employees` inserts come before the
 `tasks` inserts (FK order).
 
@@ -552,8 +551,8 @@ public Task<IReadOnlyList<TaskItem>> ListTasksByAssigneeAsync(Guid assigneeId, T
 - The returned tasks are untracked: calling `ChangeStatus` on one changes nothing in the database. The XML docs say
   so; status changes go through `ChangeTaskStatusAsync`.
 - Unknown or task-less assignee → empty list, no exception. Tasks with no `DueAt` come last (PostgreSQL's default
-  for `ASC` is `NULLS LAST`, confirmed in the container). `[uncertain]` that EF/Npgsql emits a plain
-  `ORDER BY due_at, id` with no null-ordering rewrite; B3's ordering test settles it at FB.
+  for `ASC` is `NULLS LAST`, confirmed in the container). Resolved: the ordering test
+  `ListTasksByAssigneeAsync_Bob_ReturnsHisTasksOrderedByDueAt` passes with the null-`DueAt` task last.
 
 Exceptions the service lets through, all documented with `<exception>`: `KeyNotFoundException`,
 `BusinessRuleViolationException`, `ArgumentException`/`ArgumentNullException`/`ArgumentOutOfRangeException` (from
@@ -622,13 +621,13 @@ Fixed times: `static readonly DateTimeOffset T0 = new(2026, 10, 1, 9, 0, 0, Time
 (same file). Every test gets its **own fresh database**: the fixture copies `GetConnectionString()` into an
 `NpgsqlConnectionStringBuilder` with a unique `Database` name and calls `Database.MigrateAsync()`, which "will create
 the database if it does not already exist" (EF XML docs). So seed rows are always pristine and tests are independent.
-`[uncertain]` whether CA1001 fires on a fixture that holds the container (`IAsyncDisposable`) but implements only
-xUnit's `IAsyncLifetime`; B3 resolves it if the build says so.
+Resolved: CA1001 does not fire on the fixture (it holds an `IAsyncDisposable` container and implements only xUnit's
+`IAsyncLifetime`); the build with warnings as errors is clean.
 
 Raw SQL runs through `db.Database.ExecuteSqlRawAsync(sql)` and is asserted with
 `var ex = await Assert.ThrowsAsync<PostgresException>(...)`, then `ex.SqlState` and `ex.ConstraintName`.
-`[uncertain]` that `ExecuteSqlRawAsync` surfaces `PostgresException` unwrapped (EF wraps only `SaveChanges`
-failures in `DbUpdateException`); if not, assert on the inner exception.
+Resolved: `ExecuteSqlRawAsync` surfaces `PostgresException` unwrapped (EF wraps only `SaveChanges` failures in
+`DbUpdateException`); the constraint tests assert the exact type with `Assert.ThrowsAsync<PostgresException>` and pass.
 
 `MigrationAndSeedTests`
 | Test | Checks |
@@ -676,7 +675,7 @@ list is the one in the first row.)
 | `ListTasksByAssigneeAsync_UnknownEmployee_ReturnsEmpty` | |
 | `ListTasksByAssigneeAsync_BobFilteredByStatus_ReturnsOnlyMatchingTasks` | use case 3 + status filter (Q2). Theory `(TaskItemStatus status, string expectedTaskId)`: `(New, "20000000-0000-0000-0000-000000000001")`, `(Cancelled, "20000000-0000-0000-0000-000000000003")`; exactly one task returned. Arrange: Alice gets a `New` and a `Cancelled` task first (`…0102`, `…0103`), so a filter that dropped the assignee condition would fail (D4, D3 finding J-2) |
 | `ListTasksByAssigneeAsync_UndefinedStatus_ThrowsArgumentOutOfRangeException` | `(TaskItemStatus)99` |
-| `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger` | BR3 race, DB half + translation (Q4). Arrange on one context `db`: load Bob (`…0002`) with `db.Employees.SingleAsync(...)`, so he is tracked as active. Then `db.Database.ExecuteSqlRawAsync("UPDATE employees SET is_active = false WHERE id = '10000000-0000-0000-0000-000000000002'")`. The tracked Bob stays stale, because EF returns an already-tracked instance without overwriting it (`[uncertain]` until the test runs). Act: `new TaskService(db, time).CreateTaskAsync("Race", Alice, Bob, null, null)`. Assert: `BusinessRuleViolationException` with `RuleId == "BR3"`, `InnerException` is `DbUpdateException` whose `InnerException` is `PostgresException` with `ConstraintName == "trg_tasks_br3_assignee_active"`, and a second context finds no task titled `Race`. Goes red without the trigger (the insert succeeds) or without the translation (`DbUpdateException` escapes). |
+| `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger` | BR3 race, DB half + translation (Q4). Arrange on one context `db`: load Bob (`…0002`) with `db.Employees.SingleAsync(...)`, so he is tracked as active. Then `db.Database.ExecuteSqlRawAsync("UPDATE employees SET is_active = false WHERE id = '10000000-0000-0000-0000-000000000002'")`. The tracked Bob stays stale, because EF returns an already-tracked instance without overwriting it (confirmed: the test passes). Act: `new TaskService(db, time).CreateTaskAsync("Race", Alice, Bob, null, null)`. Assert: `BusinessRuleViolationException` with `RuleId == "BR3"`, `InnerException` is `DbUpdateException` whose `InnerException` is `PostgresException` with `ConstraintName == "trg_tasks_br3_assignee_active"`, and a second context finds no task titled `Race`. Goes red without the trigger (the insert succeeds) or without the translation (`DbUpdateException` escapes). |
 | `CreateTaskAsync_AfterTriggerRejection_NextCallOnSameContextSucceeds` | failed-save cleanup (D4, D3 findings F1/SF1): after the race rejection, `CreateTaskAsync("Next", Bob, Alice)` on the same context succeeds and no `Race` row exists |
 | `ChangeTaskStatusAsync_AfterConcurrencyConflict_RetryOnSameContextSucceeds` | failed-save cleanup (D4, D3 finding SF2): another context moves `…0001` to `InProgress`; the stale change to `Completed` fails with `DbUpdateConcurrencyException`; the retry on the same context succeeds, with `CompletedAt` = the fixed time |
 | `CreateTaskAsync_AssigneeDeletedBeforeInsert_ThrowsForeignKeyDbUpdateException` | a non-check-violation error passes the BR3 filter untranslated and the context stays usable (D4, D3 finding J-4; the filter's constraint-name condition is not reachable through the service): a save interceptor deletes a fresh employee `…0004` just before the insert; expect `DbUpdateException` with inner `PostgresException` `23503` / `fk_tasks_employees_assignee_id`, nothing persisted |

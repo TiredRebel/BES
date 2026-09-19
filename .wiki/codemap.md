@@ -12,7 +12,7 @@ Generated from the CodeGraph index (`codegraph sync .`, CodeGraph 1.6.0) after f
 
 ## Index
 
-21 files, 289 nodes, 593 edges (after D4; per-kind counts as of fan-in B: method:106, import:56, class:20, file:20, namespace:19, property:16, constant:13, field:12, function:10, enum_member:4, variable:3, enum:1). Includes `.claude/hooks/wiki_checkpoint.py` (tooling).
+21 files, 289 nodes, 595 edges (after the final D4 fixes; per-kind counts as of fan-in B: method:106, import:56, class:20, file:20, namespace:19, property:16, constant:13, field:12, function:10, enum_member:4, variable:3, enum:1). Includes `.claude/hooks/wiki_checkpoint.py` (tooling).
 
 ## Projects
 

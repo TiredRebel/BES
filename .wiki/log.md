@@ -331,3 +331,8 @@ Newest entry at the bottom.
      §10–§12 schema unchanged).
   2. Extend the trigger to cover reassignment (`UPDATE OF status, assignee_id` plus the BR3 lookup on such updates)?
   3. Tighten the BR3 catch filter to this call's task only (SF3), or keep the documented behaviour?
+- Close-out (advisor check): six stale `[uncertain]` markers in spec.md replaced with what resolved them (no stray
+  `IX_` index and string seed values per B1's `Up()`; NULLS LAST per the passing ordering test; CA1001 not firing per
+  the clean build; `ExecuteSqlRawAsync` unwrapped per the exact-type `Assert.ThrowsAsync<PostgresException>` in 11
+  passing tests; the stale tracked `Employee` per the passing race test). Still open: ADR 0005's non-ASCII
+  `lower()` vs `ToLowerInvariant()` question (a rejected alternative). Code map refreshed: 289 nodes, 595 edges.
