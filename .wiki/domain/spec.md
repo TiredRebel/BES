@@ -528,13 +528,18 @@ public Task<IReadOnlyList<TaskItem>> ListTasksByAssigneeAsync(Guid assigneeId, T
    namespace `Npgsql` (package `Npgsql` 10.0.3, which reaches Application transitively through Infrastructure).
    The equality form (not a property pattern) is deliberate: it compiles whether `CheckViolation` is a `const` or a
    `static readonly` field.
+7. **Failed-save cleanup (D4, D3 findings F1/SF1)**: if `SaveChangesAsync` does not complete (any exception,
+   translated or not), set `dbContext.Entry(task).State = EntityState.Detached` in a `finally`, so the caller's
+   next save on the same context does not send the rejected insert again.
 
 **`ChangeTaskStatusAsync`**
 1. `task = await dbContext.Tasks.SingleOrDefaultAsync(t => t.Id == taskId, cancellationToken)`; null →
    `new KeyNotFoundException($"Task {taskId} was not found.")`.
 2. `task.ChangeStatus(newStatus, timeProvider.GetUtcNow())` (BR4, BR1).
 3. `await dbContext.SaveChangesAsync(cancellationToken)`; a `DbUpdateConcurrencyException` (another writer changed
-   the row since it was read) is **not caught**: it propagates and is listed in the XML `<exception>` docs.
+   the row since it was read) is **not caught**: it propagates and is listed in the XML `<exception>` docs. If the
+   save does not complete, detach the task in a `finally` (D4, D3 finding SF2), so a retry on the same context
+   reloads the current row instead of starting from the failed change.
 4. Return `task`.
 
 **`ListTasksByAssigneeAsync`**
@@ -588,6 +593,8 @@ Fixed times: `static readonly DateTimeOffset T0 = new(2026, 10, 1, 9, 0, 0, Time
 | `Create_NullTitle_ThrowsArgumentNullException` | |
 | `Create_BlankTitle_ThrowsArgumentException` (Theory `""`, `"   "`) | |
 | `Create_TitleOf201Chars_ThrowsArgumentException` | |
+| `Create_TitleOf200Chars_Succeeds` | boundary, accepted side (D4, D3 finding J-11) |
+| `Create_InactiveEmployeeAsCreatorAndAssignee_ThrowsBusinessRuleViolationBR5` | guard order: BR5 before BR3 (D4, D3 finding J-5); the service-half BR3 test relies on it |
 | `Create_NullCreator_ThrowsArgumentNullException` / `Create_NullAssignee_ThrowsArgumentNullException` | |
 | `Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5` | BR5 (same `Employee` passed twice; assert `RuleId == "BR5"`) |
 | `Create_InactiveAssignee_ThrowsBusinessRuleViolationBR3` | BR3 (`Deactivate()` then create) |
@@ -647,6 +654,7 @@ failures in `DbUpdateException`); if not, assert on the inner exception.
 | `Insert_TaskForInactiveAssignee_RejectedByBR3Trigger` | `'30000000-0000-0000-0000-000000000008', 'BR3 violation', 'New', …0001, '10000000-0000-0000-0000-000000000003', NULL, NULL, NULL` (assignee Carol, inactive) | `23514` / `trg_tasks_br3_assignee_active` |
 | `Insert_TaskForUnknownAssignee_RejectedByForeignKeyNotBR3Trigger` | `'30000000-0000-0000-0000-000000000009', 'Unknown assignee', 'New', …0001, '10000000-0000-0000-0000-000000000009', NULL, NULL, NULL` | `23503` / `fk_tasks_employees_assignee_id` (proves the trigger does not mask the FK) |
 | `Update_StatusOfCompletedTask_RejectedByBR4Trigger` | `UPDATE tasks SET status = 'New', completed_at = NULL WHERE id = '20000000-0000-0000-0000-000000000002'` | `23514` / `trg_tasks_br4_final_status` |
+| `Update_StatusOfCancelledTask_RejectedByBR4Trigger` | `UPDATE tasks SET status = 'New' WHERE id = '20000000-0000-0000-0000-000000000003'` | `23514` / `trg_tasks_br4_final_status` (the trigger's `Cancelled` branch; D4, D3 finding J-3) |
 
 (`…0001` = `'10000000-0000-0000-0000-000000000001'`, `…0002` = `'10000000-0000-0000-0000-000000000002'`; the column
 list is the one in the first row.)
@@ -663,12 +671,15 @@ list is the one in the first row.)
 | `ChangeTaskStatusAsync_NewToCompleted_PersistsStatusAndCompletedAt` | use case 2, BR1 (task `…0001`, `CompletedAt == 2026-09-18T12:00:00Z`) |
 | `ChangeTaskStatusAsync_CompletedTask_ThrowsBR4AndLeavesRowUnchanged` | BR4 (task `20000000-0000-0000-0000-000000000002`) |
 | `ChangeTaskStatusAsync_UnknownTask_ThrowsKeyNotFoundException` | not found |
-| `ListTasksByAssigneeAsync_Bob_ReturnsHisTasksOrderedByDueAt` | use case 3: `[…0001, …0003]` (null `DueAt` last) |
+| `ListTasksByAssigneeAsync_Bob_ReturnsHisTasksOrderedByDueAt` | use case 3: arrange a third Bob task `30000000-0000-0000-0000-000000000101` (planned 2026-09-20, due 2026-11-01); expect `[…0001, …0101, …0003]` (null `DueAt` last), an order that differs from ordering by id, planned start or insertion (D4, D3 finding J-1) |
 | `ListTasksByAssigneeAsync_EmployeeWithoutTasks_ReturnsEmpty` | Carol |
 | `ListTasksByAssigneeAsync_UnknownEmployee_ReturnsEmpty` | |
-| `ListTasksByAssigneeAsync_BobFilteredByStatus_ReturnsOnlyMatchingTasks` | use case 3 + status filter (Q2). Theory `(TaskItemStatus status, string expectedTaskId)`: `(New, "20000000-0000-0000-0000-000000000001")`, `(Cancelled, "20000000-0000-0000-0000-000000000003")`; exactly one task returned |
+| `ListTasksByAssigneeAsync_BobFilteredByStatus_ReturnsOnlyMatchingTasks` | use case 3 + status filter (Q2). Theory `(TaskItemStatus status, string expectedTaskId)`: `(New, "20000000-0000-0000-0000-000000000001")`, `(Cancelled, "20000000-0000-0000-0000-000000000003")`; exactly one task returned. Arrange: Alice gets a `New` and a `Cancelled` task first (`…0102`, `…0103`), so a filter that dropped the assignee condition would fail (D4, D3 finding J-2) |
 | `ListTasksByAssigneeAsync_UndefinedStatus_ThrowsArgumentOutOfRangeException` | `(TaskItemStatus)99` |
 | `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger` | BR3 race, DB half + translation (Q4). Arrange on one context `db`: load Bob (`…0002`) with `db.Employees.SingleAsync(...)`, so he is tracked as active. Then `db.Database.ExecuteSqlRawAsync("UPDATE employees SET is_active = false WHERE id = '10000000-0000-0000-0000-000000000002'")`. The tracked Bob stays stale, because EF returns an already-tracked instance without overwriting it (`[uncertain]` until the test runs). Act: `new TaskService(db, time).CreateTaskAsync("Race", Alice, Bob, null, null)`. Assert: `BusinessRuleViolationException` with `RuleId == "BR3"`, `InnerException` is `DbUpdateException` whose `InnerException` is `PostgresException` with `ConstraintName == "trg_tasks_br3_assignee_active"`, and a second context finds no task titled `Race`. Goes red without the trigger (the insert succeeds) or without the translation (`DbUpdateException` escapes). |
+| `CreateTaskAsync_AfterTriggerRejection_NextCallOnSameContextSucceeds` | failed-save cleanup (D4, D3 findings F1/SF1): after the race rejection, `CreateTaskAsync("Next", Bob, Alice)` on the same context succeeds and no `Race` row exists |
+| `ChangeTaskStatusAsync_AfterConcurrencyConflict_RetryOnSameContextSucceeds` | failed-save cleanup (D4, D3 finding SF2): another context moves `…0001` to `InProgress`; the stale change to `Completed` fails with `DbUpdateConcurrencyException`; the retry on the same context succeeds, with `CompletedAt` = the fixed time |
+| `CreateTaskAsync_AssigneeDeletedBeforeInsert_ThrowsForeignKeyDbUpdateException` | the BR3 filter stays narrow (D4, D3 finding J-4): a save interceptor deletes a fresh employee `…0004` just before the insert; expect `DbUpdateException` with inner `PostgresException` `23503` / `fk_tasks_employees_assignee_id`, nothing persisted |
 
 ### BR → test mapping
 
@@ -677,8 +688,8 @@ list is the one in the first row.)
 | BR1 | `Create_ValidInput_StartsAsNewWithNullCompletedAt`, `ChangeStatus_TransitionTableRow_BehavesAsSpecified`, `ChangeStatus_ToCompleted_SetsCompletedAtToChangedAt`, `ChangeStatus_ToCompletedWithNonUtcOffset_StoresUtcInstant` | `Insert_CompletedWithoutCompletedAt_RejectedByBR1Check`, `Insert_NewWithCompletedAt_RejectedByBR1Check`, `Update_ClearCompletedAtOfCompletedTask_RejectedByBR1Check` | `ChangeTaskStatusAsync_NewToCompleted_PersistsStatusAndCompletedAt` |
 | BR2 | `Create_DueAtBeforePlannedStartAt_ThrowsBusinessRuleViolationBR2`, `Create_DueAtEqualsPlannedStartAt_Succeeds`, `Create_PlannedStartAtOrDueAtMissing_Succeeds`, `Create_DueAtBeforePlannedStartAtAfterUtcConversion_ThrowsBusinessRuleViolationBR2` | `Insert_DueAtBeforePlannedStartAt_RejectedByBR2Check`, `Insert_DueAtEqualsPlannedStartAt_Accepted` | `CreateTaskAsync_DueAtBeforePlannedStartAt_ThrowsBR2` |
 | BR3 | `Create_InactiveAssignee_ThrowsBusinessRuleViolationBR3`, `Create_InactiveCreatorActiveAssignee_Succeeds` | `Insert_TaskForInactiveAssignee_RejectedByBR3Trigger`, `Insert_TaskForUnknownAssignee_RejectedByForeignKeyNotBR3Trigger` | `CreateTaskAsync_InactiveAssignee_ThrowsBR3AndPersistsNothing`, `CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck`, `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger` |
-| BR4 | `ChangeStatus_TransitionTableRow_BehavesAsSpecified` (8 disallowed rows), `ChangeStatus_FromCompleted_KeepsStatusAndCompletedAt` | `Update_StatusOfCompletedTask_RejectedByBR4Trigger`, `ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException` | `ChangeTaskStatusAsync_CompletedTask_ThrowsBR4AndLeavesRowUnchanged` |
-| BR5 | `Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5` | `Insert_AssigneeEqualsCreator_RejectedByBR5Check` | `CreateTaskAsync_AssigneeIsCreator_ThrowsBR5` |
+| BR4 | `ChangeStatus_TransitionTableRow_BehavesAsSpecified` (8 disallowed rows), `ChangeStatus_FromCompleted_KeepsStatusAndCompletedAt` | `Update_StatusOfCompletedTask_RejectedByBR4Trigger`, `Update_StatusOfCancelledTask_RejectedByBR4Trigger`, `ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException` | `ChangeTaskStatusAsync_CompletedTask_ThrowsBR4AndLeavesRowUnchanged` |
+| BR5 | `Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5`, `Create_InactiveEmployeeAsCreatorAndAssignee_ThrowsBusinessRuleViolationBR5` | `Insert_AssigneeEqualsCreator_RejectedByBR5Check` | `CreateTaskAsync_AssigneeIsCreator_ThrowsBR5` |
 
 Failing-then-passing (FA/FB red evidence): disabling a domain guard turns its A2 row red; dropping a CHECK or the
 trigger from a scratch copy of the migration turns its B3 rows red; removing the service's BR3 check or its

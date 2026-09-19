@@ -267,6 +267,22 @@ public sealed class DatabaseConstraintTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// Verifies that changing the status of an already-<c>Cancelled</c> seeded task is rejected by the
+    /// <c>trg_tasks_br3_br4</c> trigger, covering the trigger's second final status.
+    /// </summary>
+    /// <remarks>Verifies BR4 at the database for <c>Cancelled</c>.</remarks>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task Update_StatusOfCancelledTask_RejectedByBR4Trigger()
+    {
+        var ex = await AssertRejectedAsync(
+            "UPDATE tasks SET status = 'New' WHERE id = '20000000-0000-0000-0000-000000000003'");
+
+        Assert.Equal(PostgresErrorCodes.CheckViolation, ex.SqlState);
+        Assert.Equal("trg_tasks_br4_final_status", ex.ConstraintName);
+    }
+
+    /// <summary>
     /// Runs <paramref name="sql"/> against this test's database and returns the <see cref="PostgresException"/> it
     /// is expected to raise.
     /// </summary>

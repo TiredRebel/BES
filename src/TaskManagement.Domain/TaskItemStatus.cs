@@ -4,8 +4,9 @@ namespace TaskManagement.Domain;
 /// The lifecycle status of a <see cref="TaskItem"/>.
 /// </summary>
 /// <remarks>
-/// Stored as text (see the entity configuration). <see cref="Completed"/> and <see cref="Cancelled"/> are final:
-/// enforced as BR4 by <see cref="TaskItem.ChangeStatus"/>.
+/// Stored as text (see the entity configuration), so the member names are persisted: renaming a member breaks
+/// existing rows, the <c>ck_tasks_status_valid</c> CHECK and the BR3/BR4 trigger. <see cref="Completed"/> and
+/// <see cref="Cancelled"/> are final: enforced as BR4 by <see cref="TaskItem.ChangeStatus"/> and by the trigger.
 /// </remarks>
 public enum TaskItemStatus
 {

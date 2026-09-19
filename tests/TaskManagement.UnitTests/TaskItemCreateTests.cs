@@ -31,7 +31,8 @@ public sealed class TaskItemCreateTests
 
     /// <summary>
     /// Verifies that <see cref="TaskItem.Create(string, Employee, Employee, DateTimeOffset?, DateTimeOffset?)"/>
-    /// copies the title, the creator and assignee ids, and the planned start and due dates onto the new task.
+    /// copies the title, the creator and assignee ids, and the planned start and due dates onto the new task, and
+    /// gives it a non-empty id of its own.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
@@ -43,6 +44,8 @@ public sealed class TaskItemCreateTests
 
         var task = TaskItem.Create("Prepare report", creator, assignee, T0, dueAt);
 
+        Assert.NotEqual(Guid.Empty, task.Id);
+        Assert.NotEqual(TaskItem.Create("Other", creator, assignee, null, null).Id, task.Id);
         Assert.Equal("Prepare report", task.Title);
         Assert.Equal(creator.Id, task.CreatorId);
         Assert.Equal(assignee.Id, task.AssigneeId);
@@ -94,6 +97,7 @@ public sealed class TaskItemCreateTests
     /// Verifies that <see cref="TaskItem.Create(string, Employee, Employee, DateTimeOffset?, DateTimeOffset?)"/>
     /// throws <see cref="ArgumentException"/> when <c>title</c> is one character past the 200-character boundary.
     /// </summary>
+    /// <remarks>See <see cref="Create_TitleOf200Chars_Succeeds"/> for the accepted side of the boundary.</remarks>
     [Fact]
     [Trait("Category", "Unit")]
     public void Create_TitleOf201Chars_ThrowsArgumentException()
@@ -150,6 +154,7 @@ public sealed class TaskItemCreateTests
     /// throws <see cref="BusinessRuleViolationException"/> with <c>RuleId == "BR3"</c> when the assignee is
     /// inactive. Proves BR3: an inactive employee cannot be given a new task.
     /// </summary>
+    /// <remarks>Guard order: see <see cref="Create_InactiveEmployeeAsCreatorAndAssignee_ThrowsBusinessRuleViolationBR5"/>.</remarks>
     [Fact]
     [Trait("Category", "Unit")]
     public void Create_InactiveAssignee_ThrowsBusinessRuleViolationBR3()
@@ -257,7 +262,8 @@ public sealed class TaskItemCreateTests
     /// <summary>
     /// Verifies that <see cref="TaskItem.Create(string, Employee, Employee, DateTimeOffset?, DateTimeOffset?)"/>
     /// throws <see cref="BusinessRuleViolationException"/> with <c>RuleId == "BR2"</c> when <c>dueAt</c> is
-    /// earlier than <c>plannedStartAt</c> only after both are normalised to UTC.
+    /// earlier than <c>plannedStartAt</c> as an instant, although its local clock time (11:00+02:00) reads later than
+    /// the planned start (10:00+00:00). Proves BR2 compares instants, not wall-clock times.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
@@ -270,5 +276,38 @@ public sealed class TaskItemCreateTests
             () => TaskItem.Create("Prepare report", CreateCreator(), CreateAssignee(), plannedStartAt, dueAt));
 
         Assert.Equal("BR2", exception.RuleId);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="TaskItem.Create(string, Employee, Employee, DateTimeOffset?, DateTimeOffset?)"/>
+    /// accepts a title of exactly 200 characters, the accepted side of the title-length boundary.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Create_TitleOf200Chars_Succeeds()
+    {
+        var task = TaskItem.Create(new string('t', 200), CreateCreator(), CreateAssignee(), null, null);
+
+        Assert.Equal(200, task.Title.Length);
+    }
+
+    /// <summary>
+    /// Verifies the guard order of <see cref="TaskItem.Create(string, Employee, Employee, DateTimeOffset?, DateTimeOffset?)"/>:
+    /// when one inactive employee is both creator and assignee, BR5 is reported, because BR5 is checked before BR3
+    /// (spec §3.2). The service-level test <c>CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck</c>
+    /// relies on this order to prove the service's own BR3 check.
+    /// </summary>
+    /// <remarks>Verifies BR5 takes precedence over BR3 in the domain.</remarks>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Create_InactiveEmployeeAsCreatorAndAssignee_ThrowsBusinessRuleViolationBR5()
+    {
+        var employee = CreateAssignee();
+        employee.Deactivate();
+
+        var ex = Assert.Throws<BusinessRuleViolationException>(
+            () => TaskItem.Create("Self task", employee, employee, null, null));
+
+        Assert.Equal("BR5", ex.RuleId);
     }
 }

@@ -34,9 +34,13 @@ and BR4 with a trigger, and translate the trigger's BR3 rejection into the domai
 
 ## Consequences
 
-- Every writer is held to BR3 and BR4, raw SQL included, and the BR3 race is closed: while a task insert's
-  transaction is open, a concurrent update of that employee row (deactivation, but also a name or e-mail change) waits
-  for it. With EF's short `SaveChanges` transactions, that wait is milliseconds.
+- Every writer is held to BR4 and to BR3 **on insert**, raw SQL included, and the BR3 race is closed. BR3 is
+  checked only when a task is inserted, because creation is the only moment the model sets an assignee (spec §8).
+  A raw-SQL `UPDATE` of `assignee_id` to an inactive employee is not rejected (D3 findings F2/T1); covering it
+  would mean extending the trigger to `UPDATE OF status, assignee_id`, a schema change for the human to approve.
+  About the race: while a task insert's transaction is open, a concurrent update of that employee row
+  (deactivation, but also a name or e-mail change) waits for it. With EF's short `SaveChanges` transactions, that
+  wait is milliseconds.
 - Measured cost, in a throwaway `postgres:17-alpine` container with the spec's schema and 1,000 employees
   (server-side loop, no network, so only the differences carry over to production):
   - single-row insert: +21 µs (+11 µs for the lookup, +10 µs for the `FOR SHARE` lock);
@@ -49,5 +53,5 @@ and BR4 with a trigger, and translate the trigger's BR3 rejection into the domai
   `is_active`.
 - Rule logic now also lives in SQL. The named errors, this ADR, the migration header and the B3 tests keep it visible.
 - New B3 tests: `Insert_TaskForInactiveAssignee_RejectedByBR3Trigger`,
-  `Insert_TaskForUnknownAssignee_RejectedByForeignKeyNotBR3Trigger`, `Update_StatusOfCompletedTask_RejectedByBR4Trigger`
-  and `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger`.
+  `Insert_TaskForUnknownAssignee_RejectedByForeignKeyNotBR3Trigger`, `Update_StatusOfCompletedTask_RejectedByBR4Trigger`,
+  `Update_StatusOfCancelledTask_RejectedByBR4Trigger` (D4) and `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger`.

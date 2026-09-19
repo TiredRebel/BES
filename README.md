@@ -15,8 +15,8 @@ Task Management is the internal CRM module for assigning, executing and controll
 | `src/TaskManagement.Domain` | entities (`Employee`, `TaskItem`), enum (`TaskItemStatus`), domain exception (`BusinessRuleViolationException`) |
 | `src/TaskManagement.Infrastructure` | `TaskManagementDbContext`, Fluent configurations, seed data (via `HasData`), migration `InitialCreate`, design-time factory |
 | `src/TaskManagement.Application` | `TaskService` with the three use cases: `CreateTaskAsync`, `ChangeTaskStatusAsync`, `ListTasksByAssigneeAsync` |
-| `tests/TaskManagement.UnitTests` | domain unit tests (34 test methods, 54 test cases after theory expansion); references Domain only |
-| `tests/TaskManagement.IntegrationTests` | PostgreSQL database tests and service integration tests (33 test methods, 34 test cases); references Domain, Infrastructure, Application; runs against Testcontainers |
+| `tests/TaskManagement.UnitTests` | domain unit tests (36 test methods, 56 test cases after theory expansion); references Domain only |
+| `tests/TaskManagement.IntegrationTests` | PostgreSQL database tests and service integration tests (37 test methods, 38 test cases); references Domain, Infrastructure, Application; runs against Testcontainers |
 
 ## Prerequisites
 
@@ -62,7 +62,7 @@ Run unit tests only (no Docker required):
 dotnet test --filter Category=Unit
 ```
 
-Run all tests (54 unit test cases, 34 integration test cases; requires Docker running):
+Run all tests (56 unit test cases, 38 integration test cases; requires Docker running):
 
 ```bash
 dotnet test
@@ -85,8 +85,8 @@ dotnet test
 | BR1 | `Create_ValidInput_StartsAsNewWithNullCompletedAt`, `ChangeStatus_TransitionTableRow_BehavesAsSpecified`, `ChangeStatus_ToCompleted_SetsCompletedAtToChangedAt`, `ChangeStatus_ToCompletedWithNonUtcOffset_StoresUtcInstant`, `Insert_CompletedWithoutCompletedAt_RejectedByBR1Check`, `Insert_NewWithCompletedAt_RejectedByBR1Check`, `Update_ClearCompletedAtOfCompletedTask_RejectedByBR1Check`, `ChangeTaskStatusAsync_NewToCompleted_PersistsStatusAndCompletedAt` | Domain: remove `CompletedAt` assignment in `ChangeStatus` → 5 tests red. Database: drop `ck_tasks_br1_completed_at_iff_completed` → 3 DB tests + schema test red. |
 | BR2 | `Create_DueAtBeforePlannedStartAt_ThrowsBusinessRuleViolationBR2`, `Create_DueAtEqualsPlannedStartAt_Succeeds`, `Create_PlannedStartAtOrDueAtMissing_Succeeds`, `Create_DueAtBeforePlannedStartAtAfterUtcConversion_ThrowsBusinessRuleViolationBR2`, `Insert_DueAtBeforePlannedStartAt_RejectedByBR2Check`, `Insert_DueAtEqualsPlannedStartAt_Accepted`, `CreateTaskAsync_DueAtBeforePlannedStartAt_ThrowsBR2` | Domain: remove BR2 guard in `Create` → 2 tests red. Database: drop `ck_tasks_br2_due_at_not_before_planned_start_at` → BR2 DB test + schema test red. |
 | BR3 | `Create_InactiveAssignee_ThrowsBusinessRuleViolationBR3`, `Create_InactiveCreatorActiveAssignee_Succeeds`, `Insert_TaskForInactiveAssignee_RejectedByBR3Trigger`, `Insert_TaskForUnknownAssignee_RejectedByForeignKeyNotBR3Trigger`, `CreateTaskAsync_InactiveAssignee_ThrowsBR3AndPersistsNothing`, `CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck`, `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger` | Domain: remove BR3 guard in `Create` → 1 test red. Database: trigger not created → `Insert_TaskForInactiveAssignee_RejectedByBR3Trigger`, `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger` and the schema test red. Service: remove BR3 check → only `CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck` red; remove trigger-error translation → only `CreateTaskAsync_AssigneeDeactivatedAfterRead_ThrowsBR3FromTrigger` red. |
-| BR4 | `ChangeStatus_TransitionTableRow_BehavesAsSpecified` (8 disallowed rows), `ChangeStatus_FromCompleted_KeepsStatusAndCompletedAt`, `ChangeTaskStatusAsync_CompletedTask_ThrowsBR4AndLeavesRowUnchanged`, `ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException`, `Update_StatusOfCompletedTask_RejectedByBR4Trigger` | Domain: remove BR4 guard in `ChangeStatus` → 9 tests red (8 disallowed transition rows + 1 single-row test). Database: trigger not created → `Update_StatusOfCompletedTask_RejectedByBR4Trigger` and the schema test red. (`ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException` tests the `xmin` token, which stays in place.) |
-| BR5 | `Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5`, `Insert_AssigneeEqualsCreator_RejectedByBR5Check`, `CreateTaskAsync_AssigneeIsCreator_ThrowsBR5` | Domain: remove BR5 guard in `Create` → 1 test red. Database: drop `ck_tasks_br5_assignee_not_creator` → BR5 DB test + schema test red. |
+| BR4 | `ChangeStatus_TransitionTableRow_BehavesAsSpecified` (8 disallowed rows), `ChangeStatus_FromCompleted_KeepsStatusAndCompletedAt`, `ChangeTaskStatusAsync_CompletedTask_ThrowsBR4AndLeavesRowUnchanged`, `ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException`, `Update_StatusOfCompletedTask_RejectedByBR4Trigger`, `Update_StatusOfCancelledTask_RejectedByBR4Trigger` | Domain: remove BR4 guard in `ChangeStatus` → 9 tests red (8 disallowed transition rows + 1 single-row test). Database: trigger not created → `Update_StatusOfCompletedTask_RejectedByBR4Trigger` and the schema test red. (`ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException` tests the `xmin` token, which stays in place.) |
+| BR5 | `Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5`, `Create_InactiveEmployeeAsCreatorAndAssignee_ThrowsBusinessRuleViolationBR5`, `Insert_AssigneeEqualsCreator_RejectedByBR5Check`, `CreateTaskAsync_AssigneeIsCreator_ThrowsBR5` | Domain: remove BR5 guard in `Create` → 1 test red. Database: drop `ck_tasks_br5_assignee_not_creator` → BR5 DB test + schema test red. |
 
 Every test above was run red with its guard, CHECK constraint, or trigger removed, and green with it restored (confirmed in fan-in A and fan-in B log entries).
 

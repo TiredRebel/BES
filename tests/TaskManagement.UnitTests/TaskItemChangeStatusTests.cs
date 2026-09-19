@@ -96,7 +96,8 @@ public sealed class TaskItemChangeStatusTests
 
     /// <summary>
     /// Verifies that <see cref="TaskItem.ChangeStatus(TaskItemStatus, DateTimeOffset)"/> normalises a non-UTC
-    /// <c>changedAt</c> to the same instant with a zero offset when storing it in <c>CompletedAt</c>.
+    /// <c>changedAt</c> to the same instant with a zero offset when storing it in <c>CompletedAt</c>. Proves BR1's
+    /// <c>CompletedAt</c> is set on completion, in UTC.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]

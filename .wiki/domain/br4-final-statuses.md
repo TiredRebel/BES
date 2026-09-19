@@ -21,4 +21,5 @@ No transition out of a final status, including to the same status (`Completed โ
 
 Tests ([[spec]] ยง15): `ChangeStatus_TransitionTableRow_BehavesAsSpecified` (8 disallowed rows),
 `ChangeStatus_FromCompleted_KeepsStatusAndCompletedAt`, `ChangeTaskStatusAsync_CompletedTask_ThrowsBR4AndLeavesRowUnchanged`,
-`ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException`, `Update_StatusOfCompletedTask_RejectedByBR4Trigger`.
+`ConcurrentStatusChange_SecondSave_ThrowsDbUpdateConcurrencyException`, `Update_StatusOfCompletedTask_RejectedByBR4Trigger`,
+`Update_StatusOfCancelledTask_RejectedByBR4Trigger`.

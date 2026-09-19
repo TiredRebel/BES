@@ -8,11 +8,11 @@ related: ["[[index]]", "[[spec]]"]
 
 # Code map
 
-Generated from the CodeGraph index (`codegraph sync .`, CodeGraph 1.6.0) after fan-in B. Regenerated after every fan-in. Source of truth for contracts: [[spec]].
+Generated from the CodeGraph index (`codegraph sync .`, CodeGraph 1.6.0) after fan-in B; test counts updated after D4 (review fixes). Regenerated after every fan-in. Source of truth for contracts: [[spec]].
 
 ## Index
 
-21 files, 280 nodes, 552 edges; Nodes by Kind: method:106, import:56, class:20, file:20, namespace:19, property:16, constant:13, field:12, function:10, enum_member:4, variable:3, enum:1. Includes `.claude/hooks/wiki_checkpoint.py` (tooling).
+21 files, 289 nodes, 593 edges (after D4; per-kind counts as of fan-in B: method:106, import:56, class:20, file:20, namespace:19, property:16, constant:13, field:12, function:10, enum_member:4, variable:3, enum:1). Includes `.claude/hooks/wiki_checkpoint.py` (tooling).
 
 ## Projects
 
@@ -52,11 +52,11 @@ Generated from the CodeGraph index (`codegraph sync .`, CodeGraph 1.6.0) after f
 | Test class | Project | File | Test methods |
 |---|---|---|---|
 | EmployeeTests | TaskManagement.UnitTests | tests/TaskManagement.UnitTests/EmployeeTests.cs | 13 |
-| TaskItemCreateTests | TaskManagement.UnitTests | tests/TaskManagement.UnitTests/TaskItemCreateTests.cs | 16 |
+| TaskItemCreateTests | TaskManagement.UnitTests | tests/TaskManagement.UnitTests/TaskItemCreateTests.cs | 18 |
 | TaskItemChangeStatusTests | TaskManagement.UnitTests | tests/TaskManagement.UnitTests/TaskItemChangeStatusTests.cs | 5 |
 | MigrationAndSeedTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/MigrationAndSeedTests.cs | 4 |
-| DatabaseConstraintTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/DatabaseConstraintTests.cs | 13 |
-| TaskServiceTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/TaskServiceTests.cs | 16 |
+| DatabaseConstraintTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/DatabaseConstraintTests.cs | 14 |
+| TaskServiceTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/TaskServiceTests.cs | 19 |
 | PostgresFixture | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/PostgresFixture.cs | fixture |
 
 ## Dependencies

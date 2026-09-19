@@ -5,8 +5,9 @@ using TaskManagement.Infrastructure;
 namespace TaskManagement.IntegrationTests;
 
 /// <summary>
-/// Proves that <c>InitialCreate</c> applies cleanly to an empty database, creates exactly the schema objects
-/// listed in spec &#167;11 (including the <c>trg_tasks_br3_br4</c> trigger), and seeds the rows of spec &#167;12.
+/// Proves that <c>InitialCreate</c> applies cleanly to an empty database, creates every schema object listed in
+/// spec &#167;11 (constraints and indexes are checked for presence; the <c>trg_tasks_br3_br4</c> trigger is checked
+/// to be the only user trigger on <c>tasks</c>), and seeds the rows of spec &#167;12.
 /// </summary>
 [Collection("Postgres")]
 public sealed class MigrationAndSeedTests : IAsyncLifetime

@@ -1,4 +1,3 @@
-using System.Threading;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using TaskManagement.Domain;
@@ -12,7 +11,8 @@ namespace TaskManagement.Application;
 /// </summary>
 /// <remarks>
 /// No interface: there is one implementation and the integration tests exercise it against a real database, so
-/// there is no mocking need.
+/// there is no mocking need. When a save fails, the method detaches the entity it added or changed, so a caller that
+/// keeps using the same context never has that failed change retried by a later save.
 /// </remarks>
 public sealed class TaskService
 {
@@ -23,7 +23,7 @@ public sealed class TaskService
     /// Initializes a new instance of the <see cref="TaskService"/> class.
     /// </summary>
     /// <param name="dbContext">The database context the three use cases read and write through.</param>
-    /// <param name="timeProvider">The clock used to time-stamp status changes.</param>
+    /// <param name="timeProvider">The clock that supplies <see cref="TaskItem.CompletedAt"/> when a task is completed.</param>
     public TaskService(TaskManagementDbContext dbContext, TimeProvider timeProvider)
     {
         this.dbContext = dbContext;
@@ -42,14 +42,23 @@ public sealed class TaskService
     /// <returns>The persisted <see cref="TaskItem"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="title"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="title"/> is empty, whitespace, or longer than 200 characters once trimmed.</exception>
-    /// <exception cref="KeyNotFoundException"><paramref name="creatorId"/> or <paramref name="assigneeId"/> does not match an employee.</exception>
+    /// <exception cref="KeyNotFoundException"><paramref name="creatorId"/> or <paramref name="assigneeId"/> does not match an employee when they are read.</exception>
     /// <exception cref="BusinessRuleViolationException">
-    /// BR5: the creator and the assignee are the same employee. BR3: the assignee is inactive, whether caught by the
-    /// application's own check, the domain's re-check, or the database trigger on a race. BR2: both dates are set
-    /// and <paramref name="dueAt"/> is earlier than <paramref name="plannedStartAt"/>.
+    /// BR3: the assignee is inactive, whether caught by this method's own check, the domain's re-check, or the
+    /// database trigger on a race. BR5: the creator and the assignee are the same (active) employee. BR2: both dates
+    /// are set and <paramref name="dueAt"/> is earlier than <paramref name="plannedStartAt"/>. Only the first
+    /// violated rule is reported (see remarks).
     /// </exception>
-    /// <exception cref="DbUpdateException">The database rejected the insert for a reason other than the BR3 trigger.</exception>
-    /// <remarks>Enforces BR2, BR3 and BR5.</remarks>
+    /// <exception cref="DbUpdateException">
+    /// The database rejected the insert for a reason other than the BR3 trigger, for example the foreign key when an
+    /// employee is deleted between the read and the insert.
+    /// </exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+    /// <remarks>
+    /// Enforces BR2, BR3 and BR5. Check order: this method checks BR3 before calling
+    /// <see cref="TaskItem.Create"/>, which checks BR5, then BR3, then BR2. So when one inactive employee is both
+    /// creator and assignee, BR3 is reported. If the save fails, the new task is detached from the context.
+    /// </remarks>
     public async Task<TaskItem> CreateTaskAsync(
         string title,
         Guid creatorId,
@@ -81,9 +90,11 @@ public sealed class TaskService
 
         dbContext.Tasks.Add(task);
 
+        var saved = false;
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
+            saved = true;
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg
             && pg.SqlState == PostgresErrorCodes.CheckViolation
@@ -93,6 +104,14 @@ public sealed class TaskService
                 "BR3",
                 $"BR3: Employee {assigneeId} is inactive and cannot be given a new task.",
                 ex);
+        }
+        finally
+        {
+            if (!saved)
+            {
+                // A task left in the Added state would be sent again by the caller's next save on this context.
+                dbContext.Entry(task).State = EntityState.Detached;
+            }
         }
 
         return task;
@@ -109,7 +128,12 @@ public sealed class TaskService
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="newStatus"/> is not a defined <see cref="TaskItemStatus"/> member.</exception>
     /// <exception cref="BusinessRuleViolationException">BR4: the task's current status is <see cref="TaskItemStatus.Completed"/> or <see cref="TaskItemStatus.Cancelled"/>, which are final.</exception>
     /// <exception cref="DbUpdateConcurrencyException">Another writer changed the task since it was read.</exception>
-    /// <remarks>Enforces BR1 and BR4 (both in <see cref="TaskItem.ChangeStatus"/>).</remarks>
+    /// <exception cref="DbUpdateException">The database rejected the update for another reason.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+    /// <remarks>
+    /// Enforces BR1 and BR4 (both in <see cref="TaskItem.ChangeStatus"/>). If the save fails, the task is detached
+    /// from the context, so a retry on the same context reloads the current row instead of reusing the failed change.
+    /// </remarks>
     public async Task<TaskItem> ChangeTaskStatusAsync(
         Guid taskId,
         TaskItemStatus newStatus,
@@ -123,7 +147,20 @@ public sealed class TaskService
 
         task.ChangeStatus(newStatus, timeProvider.GetUtcNow());
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        var saved = false;
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            saved = true;
+        }
+        finally
+        {
+            if (!saved)
+            {
+                // A task left in the Modified state would make a retry on this context start from the failed change.
+                dbContext.Entry(task).State = EntityState.Detached;
+            }
+        }
 
         return task;
     }
@@ -135,10 +172,12 @@ public sealed class TaskService
     /// <param name="status">When set, restricts the result to tasks in this status.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>
-    /// The assignee's tasks, ordered by <see cref="TaskItem.DueAt"/> then <see cref="TaskItem.Id"/>. The returned
-    /// tasks are untracked; a status change goes through <see cref="ChangeTaskStatusAsync"/>.
+    /// The assignee's tasks, ordered by <see cref="TaskItem.DueAt"/> then <see cref="TaskItem.Id"/>; tasks without a
+    /// deadline come last. An unknown employee, or one without tasks, gets an empty list. The returned tasks are
+    /// untracked; a status change goes through <see cref="ChangeTaskStatusAsync"/>.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="status"/> has a value that is not a defined <see cref="TaskItemStatus"/> member.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public async Task<IReadOnlyList<TaskItem>> ListTasksByAssigneeAsync(
         Guid assigneeId,
         TaskItemStatus? status = null,

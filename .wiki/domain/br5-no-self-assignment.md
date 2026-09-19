@@ -19,5 +19,5 @@ Decided in the brief: this is the meaning of "assigned to oneself".
 The CHECK is possible only because assignee and creator live on the same row
 ([ADR 0002](../../docs/adr/0002-assignee-column-on-task.md)). Both columns are non-null, so the CHECK never sees NULL.
 
-Tests ([[spec]] §15): `Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5`, `Insert_AssigneeEqualsCreator_RejectedByBR5Check`,
+Tests ([[spec]] §15): `Create_AssigneeIsCreator_ThrowsBusinessRuleViolationBR5`, `Create_InactiveEmployeeAsCreatorAndAssignee_ThrowsBusinessRuleViolationBR5` (guard order), `Insert_AssigneeEqualsCreator_RejectedByBR5Check`,
 `CreateTaskAsync_AssigneeIsCreator_ThrowsBR5`.

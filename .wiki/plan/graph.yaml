@@ -260,7 +260,7 @@ nodes:
     inputs: ["git diff main...feature/task-management", "build + test output files"]   # never agent summaries
     outputs: [".wiki/agents/bus/D3-to-orch-*.md"]
     acceptance: "one report per reviewer exists; each finding marked confirmed / rejected by orch with evidence"
-    status: pending
+    status: done
 
   - id: D4
     name: Fix loop (confirmed findings only), then re-run D3 once
@@ -269,4 +269,4 @@ nodes:
     depends_on: [D3]
     acceptance: "dotnet build -warnaserror && dotnet test"
     commit: "fix: address confirmed review findings"
-    status: pending
+    status: in_progress

@@ -268,3 +268,38 @@ Newest entry at the bottom.
 - D2: `codegraph sync . && codegraph status . && test -s .wiki/codemap.md && grep -q '```mermaid' .wiki/codemap.md` →
   exit 0 (the map was regenerated at fan-in B; the README adds no code).
 - graph.yaml: D1, D2 done. Next: D3 review.
+
+## 2026-09-19 · orch + D3 reviewers (opus ×5) · session 1 · D3 review, D4 fixes
+
+- Previous commit: D1/D2 = `ae7bb74`.
+- D3: five pr-review-toolkit reviewers (opus) read the diff, the spec and the captured evidence (build, per-test
+  results, FA/FB red evidence), never the workers' reports. Reports: `agents/bus/D3-to-orch-001.md` … `005.md`.
+  Two were interrupted by API rate limits and resumed with their context. Counts: code-reviewer 0/1/1/2
+  (critical/major/minor/nit), comment-analyzer 0/4/10/7, type-design 0/0/1/2, silent-failure 0/2/2/1,
+  pr-test-analyzer 0/1/10/4.
+- Triage with the evidence for every finding: `agents/bus/orch-to-D4-001.md`. Root cause of both service majors
+  (F1 = SF1, SF2): a failed `SaveChanges` left the entity tracked, so a caller that reused the context got a false
+  BR3 (naming Alice) or a false BR4, or had the rejected insert sent again.
+- D4 (orch, test-first):
+  - Before the fix, the two new context-reuse tests were red with exactly those symptoms
+    ("BR3: Employee …0001 is inactive"; "BR4: Task …0001 is Completed").
+  - Fix in `TaskService`: `finally { if (!saved) dbContext.Entry(task).State = EntityState.Detached; }` in both
+    write methods. After the fix, all green.
+  - New and strengthened tests: J-1 ordering (third Bob task), J-2 filter (Alice's New/Cancelled tasks), J-3 BR4
+    trigger `Cancelled` branch, J-4 FK error through `CreateTaskAsync` (save interceptor deletes the assignee just
+    before the insert; the first design hit `KeyNotFoundException` and was replaced), J-5 domain guard order, J-6
+    task Id, J-11 200-character title.
+  - Docs: C01–C14, SF4/SF5 (`OperationCanceledException`, `DbUpdateException`, FK case), F3 (redundant using).
+    ADR 0009 narrowed to "BR3 on insert". Spec §14 (steps for the failed-save cleanup) and §15 (new rows, mapping),
+    README (counts, BR4/BR5 rows), BR4 and BR5 pages updated.
+- D4 red evidence (each change undone on the merged tree, integration tests run, files restored byte-for-byte):
+  CreateTaskAsync detach removed → only `CreateTaskAsync_AfterTriggerRejection_NextCallOnSameContextSucceeds` red;
+  ChangeTaskStatusAsync detach removed → only `ChangeTaskStatusAsync_AfterConcurrencyConflict_RetryOnSameContextSucceeds`
+  red; BR3 catch filter widened → only `CreateTaskAsync_AssigneeDeletedBeforeInsert_ThrowsForeignKeyDbUpdateException`
+  red; trigger BR4 without `'Cancelled'` → only `Update_StatusOfCancelledTask_RejectedByBR4Trigger` red.
+  J-9: removing `IsRowVersion()` fails all 38 integration tests, so that ablation can't isolate the token.
+- Gates: `dotnet build -warnaserror` → 0/0; `dotnet test` → 56/56 unit, 38/38 integration; attribute gate → exit 0;
+  every test name cited in the spec and README (73) exists in `tests/`. Code map: counts updated, 289 nodes / 593 edges.
+- Deferred to the human: extending the trigger to cover a reassignment (`UPDATE OF status, assignee_id`), which
+  changes the approved schema (F2/T1). Skipped as nits or not required: C15–C21, T2, T3, J-7, J-10, J-12–J-15.
+- Next: re-run D3 once on the D4 diff, as the brief requires.

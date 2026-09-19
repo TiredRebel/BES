@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Npgsql;
 using TaskManagement.Application;
 using TaskManagement.Domain;
@@ -8,9 +9,9 @@ namespace TaskManagement.IntegrationTests;
 
 /// <summary>
 /// End-to-end tests for <see cref="TaskService"/>'s three use cases against a real, migrated and seeded PostgreSQL
-/// database. Every test uses a fixed <see cref="FixedTimeProvider"/> (2026-09-18T12:00:00Z) and re-reads persisted
-/// state through a second <see cref="TaskManagementDbContext"/> so assertions never rely on the first context's
-/// change tracker.
+/// database. Every test uses a fixed <see cref="FixedTimeProvider"/> (2026-09-18T12:00:00Z). Tests that check what
+/// was persisted re-read it through a second <see cref="TaskManagementDbContext"/>, so those assertions do not rely
+/// on the first context's change tracker.
 /// </summary>
 [Collection("Postgres")]
 public sealed class TaskServiceTests : IAsyncLifetime
@@ -18,9 +19,11 @@ public sealed class TaskServiceTests : IAsyncLifetime
     private static readonly Guid AliceId = Guid.Parse("10000000-0000-0000-0000-000000000001");
     private static readonly Guid BobId = Guid.Parse("10000000-0000-0000-0000-000000000002");
     private static readonly Guid CarolId = Guid.Parse("10000000-0000-0000-0000-000000000003");
+    private static readonly Guid DanId = Guid.Parse("10000000-0000-0000-0000-000000000004");
     private static readonly Guid[] BobsTaskIdsOrderedByDueAt =
     [
         Guid.Parse("20000000-0000-0000-0000-000000000001"),
+        Guid.Parse("30000000-0000-0000-0000-000000000101"),
         Guid.Parse("20000000-0000-0000-0000-000000000003"),
     ];
 
@@ -66,7 +69,11 @@ public sealed class TaskServiceTests : IAsyncLifetime
         Assert.Equal(BobId, persisted.AssigneeId);
     }
 
-    /// <summary>Verifies BR3 (service check): an inactive assignee is rejected and nothing is persisted.</summary>
+    /// <summary>
+    /// Verifies BR3 through the service: an inactive assignee is rejected and nothing is persisted. The service's
+    /// own check and the domain's re-check both reject this case; the service half alone is proven by
+    /// <c>CreateTaskAsync_InactiveEmployeeAsCreatorAndAssignee_ThrowsBR3FromServiceCheck</c>.
+    /// </summary>
     /// <remarks>Enforces BR3.</remarks>
     [Fact]
     [Trait("Category", "Integration")]
@@ -83,9 +90,10 @@ public sealed class TaskServiceTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Verifies that when the same inactive employee is both creator and assignee, the service's BR3 check throws
-    /// before the domain would throw BR5. This pins the service check running (and BR5 in
-    /// <see cref="TaskItem.Create"/> being ordered) so it goes red if either check is removed or reordered.
+    /// Verifies that when the same inactive employee is both creator and assignee, the service's own BR3 check throws
+    /// before <see cref="TaskItem.Create"/> runs. It goes red only if the service check is removed: the domain would
+    /// then throw BR5 first, because <see cref="TaskItem.Create"/> checks BR5 before BR3. That domain order is pinned
+    /// by the unit test <c>Create_InactiveEmployeeAsCreatorAndAssignee_ThrowsBusinessRuleViolationBR5</c>.
     /// </summary>
     /// <remarks>Enforces BR3 (service half).</remarks>
     [Fact]
@@ -208,14 +216,20 @@ public sealed class TaskServiceTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Verifies use case 3: listing Bob's tasks returns both of his seeded tasks ordered by <c>DueAt</c>, with the
-    /// null-<c>DueAt</c> task last.
+    /// Verifies use case 3: listing Bob's tasks returns them ordered by <c>DueAt</c>, with the null-<c>DueAt</c> task
+    /// last. A third Bob task (due 2026-11-01, planned 2026-09-20) makes that order differ from ordering by id, by
+    /// planned start, or by insertion.
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
     public async Task ListTasksByAssigneeAsync_Bob_ReturnsHisTasksOrderedByDueAt()
     {
         var service = new TaskService(_dbContext!, _timeProvider);
+
+        await _dbContext!.Database.ExecuteSqlRawAsync(
+            "INSERT INTO tasks (id, title, status, creator_id, assignee_id, planned_start_at, due_at, completed_at) VALUES " +
+            "('30000000-0000-0000-0000-000000000101', 'Later deadline', 'New', '10000000-0000-0000-0000-000000000001', " +
+            "'10000000-0000-0000-0000-000000000002', '2026-09-20T09:00:00+00:00', '2026-11-01T17:00:00+00:00', NULL)");
 
         var tasks = await service.ListTasksByAssigneeAsync(BobId);
 
@@ -248,7 +262,8 @@ public sealed class TaskServiceTests : IAsyncLifetime
 
     /// <summary>
     /// Verifies use case 3's optional status filter: only the task matching both the assignee and the given status
-    /// is returned.
+    /// is returned. Alice gets a <c>New</c> and a <c>Cancelled</c> task first, so a filter that dropped the assignee
+    /// condition would return two tasks.
     /// </summary>
     /// <param name="status">The status to filter by.</param>
     /// <param name="expectedTaskId">The id of the single task expected to match.</param>
@@ -261,6 +276,13 @@ public sealed class TaskServiceTests : IAsyncLifetime
         string expectedTaskId)
     {
         var service = new TaskService(_dbContext!, _timeProvider);
+
+        await _dbContext!.Database.ExecuteSqlRawAsync(
+            "INSERT INTO tasks (id, title, status, creator_id, assignee_id, planned_start_at, due_at, completed_at) VALUES " +
+            "('30000000-0000-0000-0000-000000000102', 'Alice new', 'New', '10000000-0000-0000-0000-000000000002', " +
+            "'10000000-0000-0000-0000-000000000001', NULL, NULL, NULL), " +
+            "('30000000-0000-0000-0000-000000000103', 'Alice cancelled', 'Cancelled', '10000000-0000-0000-0000-000000000002', " +
+            "'10000000-0000-0000-0000-000000000001', NULL, NULL, NULL)");
 
         var tasks = await service.ListTasksByAssigneeAsync(BobId, status);
 
@@ -280,8 +302,9 @@ public sealed class TaskServiceTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Verifies the BR3 race (grill Q4): a context that already tracks Bob as active does not re-read the row, so
-    /// only the database trigger catches a deactivation committed after the read. The service must translate the
+    /// Verifies the BR3 race (grill Q4): the service's query does run, but a context that already tracks Bob keeps
+    /// its tracked, stale copy (still active), so only the database trigger catches a deactivation committed after
+    /// the read. The service must translate the
     /// trigger's rejection into <see cref="BusinessRuleViolationException"/> while keeping the original exception
     /// chain, and must not leave a persisted task behind.
     /// </summary>
@@ -305,5 +328,106 @@ public sealed class TaskServiceTests : IAsyncLifetime
 
         await using var readContext = PostgresFixture.CreateContext(_connectionString);
         Assert.False(await readContext.Tasks.AnyAsync(t => t.Title == "Race"));
+    }
+
+    /// <summary>
+    /// Verifies that after the BR3 trigger rejects a task, the same context and service can create the next task.
+    /// The rejected task must not stay queued in the context: otherwise the next save would send it again and fail
+    /// (or, once the assignee is active again, persist it after the caller was told it was rejected).
+    /// </summary>
+    /// <remarks>Verifies the failed-save cleanup in <see cref="TaskService.CreateTaskAsync"/> (D3 findings F1/SF1).</remarks>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task CreateTaskAsync_AfterTriggerRejection_NextCallOnSameContextSucceeds()
+    {
+        await _dbContext!.Employees.SingleAsync(e => e.Id == BobId);
+        await _dbContext.Database.ExecuteSqlRawAsync(
+            "UPDATE employees SET is_active = false WHERE id = '10000000-0000-0000-0000-000000000002'");
+        var service = new TaskService(_dbContext, _timeProvider);
+        await Assert.ThrowsAsync<BusinessRuleViolationException>(
+            () => service.CreateTaskAsync("Race", AliceId, BobId, null, null));
+
+        var next = await service.CreateTaskAsync("Next", BobId, AliceId, null, null);
+
+        await using var readContext = PostgresFixture.CreateContext(_connectionString);
+        Assert.False(await readContext.Tasks.AnyAsync(t => t.Title == "Race"));
+        Assert.True(await readContext.Tasks.AnyAsync(t => t.Id == next.Id));
+    }
+
+    /// <summary>
+    /// Verifies that after a concurrency conflict, retrying the same status change on the same context succeeds
+    /// against the current row. The failed change must not stay in the context: otherwise the retry would see its
+    /// own unsaved <c>Completed</c> and be rejected with a false BR4.
+    /// </summary>
+    /// <remarks>Verifies the failed-save cleanup in <see cref="TaskService.ChangeTaskStatusAsync"/> (D3 finding SF2).</remarks>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ChangeTaskStatusAsync_AfterConcurrencyConflict_RetryOnSameContextSucceeds()
+    {
+        var taskId = Guid.Parse("20000000-0000-0000-0000-000000000001");
+        await _dbContext!.Tasks.SingleAsync(t => t.Id == taskId);
+        await using (var otherContext = PostgresFixture.CreateContext(_connectionString))
+        {
+            await new TaskService(otherContext, _timeProvider).ChangeTaskStatusAsync(taskId, TaskItemStatus.InProgress);
+        }
+
+        var service = new TaskService(_dbContext, _timeProvider);
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
+            () => service.ChangeTaskStatusAsync(taskId, TaskItemStatus.Completed));
+
+        var retried = await service.ChangeTaskStatusAsync(taskId, TaskItemStatus.Completed);
+
+        Assert.Equal(TaskItemStatus.Completed, retried.Status);
+        await using var readContext = PostgresFixture.CreateContext(_connectionString);
+        var persisted = await readContext.Tasks.AsNoTracking().SingleAsync(t => t.Id == taskId);
+        Assert.Equal(TaskItemStatus.Completed, persisted.Status);
+        Assert.Equal(new DateTimeOffset(2026, 9, 18, 12, 0, 0, TimeSpan.Zero), persisted.CompletedAt);
+    }
+
+    /// <summary>
+    /// Verifies that a database error other than the BR3 trigger is not translated: an assignee deleted between the
+    /// service's read and its insert surfaces as the foreign-key <see cref="DbUpdateException"/>
+    /// (<c>fk_tasks_employees_assignee_id</c>), not as a business-rule violation, and nothing is persisted. A save
+    /// interceptor deletes the assignee on another connection just before the insert, a real interleaving.
+    /// </summary>
+    /// <remarks>Verifies that the BR3 catch filter in <see cref="TaskService.CreateTaskAsync"/> stays narrow (D3 finding J-4).</remarks>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task CreateTaskAsync_AssigneeDeletedBeforeInsert_ThrowsForeignKeyDbUpdateException()
+    {
+        await _dbContext!.Database.ExecuteSqlRawAsync(
+            "INSERT INTO employees (id, full_name, email, is_active) VALUES " +
+            "('10000000-0000-0000-0000-000000000004', 'Dan Temp', 'dan.temp@example.com', true)");
+        var options = new DbContextOptionsBuilder<TaskManagementDbContext>()
+            .UseNpgsql(_connectionString)
+            .AddInterceptors(new DeleteEmployeeBeforeSaveInterceptor(_connectionString, DanId))
+            .Options;
+        await using var context = new TaskManagementDbContext(options);
+        var service = new TaskService(context, _timeProvider);
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(
+            () => service.CreateTaskAsync("Orphan", AliceId, DanId, null, null));
+
+        var postgresException = Assert.IsType<PostgresException>(ex.InnerException);
+        Assert.Equal(PostgresErrorCodes.ForeignKeyViolation, postgresException.SqlState);
+        Assert.Equal("fk_tasks_employees_assignee_id", postgresException.ConstraintName);
+        await using var readContext = PostgresFixture.CreateContext(_connectionString);
+        Assert.False(await readContext.Tasks.AnyAsync(t => t.Title == "Orphan"));
+    }
+
+    private sealed class DeleteEmployeeBeforeSaveInterceptor(string connectionString, Guid employeeId) : SaveChangesInterceptor
+    {
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = new NpgsqlCommand("DELETE FROM employees WHERE id = @id", connection);
+            command.Parameters.AddWithValue("id", employeeId);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            return result;
+        }
     }
 }

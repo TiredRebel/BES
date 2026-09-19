@@ -49,8 +49,8 @@ public sealed class TaskItem
     /// <param name="title">The task title.</param>
     /// <param name="creator">The employee creating the task.</param>
     /// <param name="assignee">The employee the task is assigned to.</param>
-    /// <param name="plannedStartAt">The planned start date and time, or null.</param>
-    /// <param name="dueAt">The deadline, or null.</param>
+    /// <param name="plannedStartAt">The planned start date and time, or null. Stored as the same instant in UTC (<c>ToUniversalTime()</c>).</param>
+    /// <param name="dueAt">The deadline, or null. Stored as the same instant in UTC (<c>ToUniversalTime()</c>).</param>
     /// <returns>A new <see cref="TaskItem"/> with status <see cref="TaskItemStatus.New"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="title"/>, <paramref name="creator"/> or <paramref name="assignee"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="title"/> is empty, whitespace, or longer than 200 characters once trimmed.</exception>
@@ -61,7 +61,8 @@ public sealed class TaskItem
     /// </exception>
     /// <remarks>
     /// Enforces BR5 (the creator is not the assignee), BR3 (the assignee is active) and BR2 (<c>DueAt</c> is not
-    /// earlier than <c>PlannedStartAt</c>).
+    /// earlier than <c>PlannedStartAt</c>). The guards run in that order (spec &#167;3.2), and only the first violated
+    /// rule is reported.
     /// </remarks>
     public static TaskItem Create(
         string title,
@@ -117,10 +118,14 @@ public sealed class TaskItem
     /// Moves the task to <paramref name="newStatus"/>.
     /// </summary>
     /// <param name="newStatus">The status to move to.</param>
-    /// <param name="changedAt">The date and time of the change, used as <see cref="CompletedAt"/> when moving to <see cref="TaskItemStatus.Completed"/>.</param>
+    /// <param name="changedAt">The date and time of the change, stored in UTC (<c>ToUniversalTime()</c>) as <see cref="CompletedAt"/> when moving to <see cref="TaskItemStatus.Completed"/>.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="newStatus"/> is not a defined <see cref="TaskItemStatus"/> member.</exception>
     /// <exception cref="BusinessRuleViolationException">BR4: the current <see cref="Status"/> is <see cref="TaskItemStatus.Completed"/> or <see cref="TaskItemStatus.Cancelled"/>, which are final.</exception>
-    /// <remarks>Enforces BR4 (guard) and BR1 (the status/<see cref="CompletedAt"/> assignment).</remarks>
+    /// <remarks>
+    /// Enforces BR4 (guard) and BR1 (the status/<see cref="CompletedAt"/> assignment). Moving a non-final task to
+    /// the status it already has does nothing. For a final task the BR4 guard runs first, so even
+    /// <c>Completed → Completed</c> is rejected.
+    /// </remarks>
     public void ChangeStatus(TaskItemStatus newStatus, DateTimeOffset changedAt)
     {
         if (!Enum.IsDefined(newStatus))
