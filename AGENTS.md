@@ -8,7 +8,8 @@ the execution graph (`.wiki/plan/graph.yaml`, with each node's status) and the s
 
 ## What this repo is
 
-The data layer of an internal CRM **Task Management** module: PostgreSQL + EF Core.
+The data layer of **Task Management**, the internal CRM module for assigning, executing and controlling employees'
+tasks: PostgreSQL + EF Core.
 Covers employees, tasks, task assignment, deadlines and statuses, enforcing business rules BR1–BR5
 (defined in `.wiki/domain/`). Scope is backend/data only: domain, persistence, an application service, tests.
 A web API, UI or server host is out of scope.
@@ -32,15 +33,15 @@ A web API, UI or server host is out of scope.
 | Item | Version |
 |---|---|
 | .NET SDK / TFM | 10.0.401 / `net10.0` (LTS) |
-| Microsoft.EntityFrameworkCore, .Design | 10.0.12 |
+| Microsoft.EntityFrameworkCore, .Relational, .Design | 10.0.12 |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
 | dotnet-ef (global tool) | 10.0.12 |
 | xunit / xunit.runner.visualstudio / Microsoft.NET.Test.Sdk | 2.9.3 / 3.1.4 / 17.14.1 |
 | Testcontainers.PostgreSql | 4.15.0 |
 | PostgreSQL image for tests | `postgres:17-alpine` |
 
-`[uncertain]` pending human approval: an explicit `Microsoft.EntityFrameworkCore.Relational` 10.0.12 reference.
-Without it, Npgsql 10.0.3 pulls Relational 10.0.4 and any project referencing Infrastructure fails with MSB3277.
+`Microsoft.EntityFrameworkCore.Relational` is referenced explicitly in Infrastructure (approved at N2): Npgsql 10.0.3
+only requires Relational >= 10.0.4, and without the pin every project referencing Infrastructure fails with MSB3277.
 
 `Directory.Build.props` applies to every project: `Nullable`, `TreatWarningsAsErrors`,
 `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`, `GenerateDocumentationFile` with CS1591 as an error.
@@ -71,7 +72,7 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 codegraph sync .                              # refresh the code graph index after code changes
 ```
 
-Project paths are provisional until the architecture spec is approved; `.wiki/index.md` has the current layout.
+Solution layout and the exact file list per node: `.wiki/domain/spec.md` §1.
 
 ## Code graph
 
@@ -92,3 +93,11 @@ projects only). For symbol questions, use `codegraph query <name>`, `codegraph c
 - Agents talk through the message bus: one file per message in `.wiki/agents/bus/`, named
   `<from>-to-<to>-<seq>.md` (for example `A2-to-A1-001.md`). The orchestrator's id is `orch`.
 - Worker reports carry: status, files changed, commands run with their real output, open questions.
+- Progress survives context loss: Claude Code hooks in `.claude/settings.json` run `.claude/hooks/wiki_checkpoint.py`
+  (needs `python` 3 on PATH, standard library only). Before every compaction (manual, or auto when the context window
+  is full) and on an API stop (`StopFailure`: rate limit, max output tokens, …) it writes
+  `.wiki/checkpoints/<UTC time>-<event>.md` with git state, node statuses, the newest bus messages, the last log entry,
+  recent user requests and the last assistant message; after compaction it appends the compaction summary and points
+  the new context at that file. Other tools resume from the newest checkpoint plus `.wiki/index.md`.
+- Development workers load the `ponytail:ponytail` skill before writing code: the smallest code that meets the spec.
+  What the brief or spec requires (XML docs, BR guards, constraints, tests) is required, not optional.

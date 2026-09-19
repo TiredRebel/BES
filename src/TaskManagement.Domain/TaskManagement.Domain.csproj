@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Entities, the status enum and the domain exception. No package references. -->
+
+</Project>
