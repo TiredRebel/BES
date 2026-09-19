@@ -336,3 +336,12 @@ Newest entry at the bottom.
   the clean build; `ExecuteSqlRawAsync` unwrapped per the exact-type `Assert.ThrowsAsync<PostgresException>` in 11
   passing tests; the stale tracked `Employee` per the passing race test). Still open: ADR 0005's non-ASCII
   `lower()` vs `ToLowerInvariant()` question (a rejected alternative). Code map refreshed: 289 nodes, 595 edges.
+
+## 2026-09-19 · orch · session 1 · context update (human request "Онови контекст")
+
+- Previous commit: close-out = `1063e79`.
+- Wrote a checkpoint by running `.claude/hooks/wiki_checkpoint.py` by hand on this session's transcript (the hooks
+  load only from the next session): `checkpoints/2026-09-19T071059Z-precompact-manual.md` (git state, all 15 nodes
+  done, newest bus messages, last log entry, recent requests, the final report).
+- Rewrote `.wiki/index.md` "Current state" as the resume block: state, where to resume, the 3 decisions waiting on the
+  human, what was closed by documentation, the `[uncertain]` list and next steps. It had stale text from fan-in B.

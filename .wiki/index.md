@@ -2,7 +2,7 @@
 title: Wiki index
 type: index
 status: active
-updated: 2026-09-18
+updated: 2026-09-19
 related: ["[[log]]", "[[codemap]]", "[[spec]]", "[[decisions/index]]"]
 ---
 
@@ -14,14 +14,30 @@ its data layer (PostgreSQL + EF Core).
 Read this page first in every session. Instructions for agents live in `AGENTS.md`; this wiki holds the
 project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikilinks]]`, so Obsidian can open it.
 
-## Current state
+## Current state (updated 2026-09-19)
 
-- Phase: **all nodes done**. D3 re-ran once on the D4 fixes; its findings are fixed or listed as next steps. 94 tests
-  (56 unit, 38 integration) pass. Open questions for the human are in the newest [[log]] entry. N0–N2, S0, waves A and B and both fan-ins
-  are done: 88 tests (54 unit, 34 integration) pass. The human approved the spec at the N2
-  gate and four more decisions at the pre-implementation grill (BR3/BR4 trigger, status filter, seed stays in
-  `InitialCreate` as demo data, BR3 trigger error translated to the domain exception); see [[log]].
-- Resume here: read the newest entries of [[log]], then the node statuses in `plan/graph.yaml`.
+- **All execution-graph nodes are done.** Branch `feature/task-management` (13 commits over `main`), nothing pushed.
+  `dotnet build -warnaserror` 0/0; `dotnet test` 94/94 (56 unit, 38 integration on PostgreSQL 17 via Testcontainers).
+- **Resume here:** the newest checkpoint in `checkpoints/`, then the last two [[log]] entries, then
+  `agents/bus/orch-to-D4-001.md` (every review finding and its disposition).
+- **Waiting on the human (3 decisions):**
+  1. Ratify D4's edits to the approved spec: §14 (failed-save cleanup), §15 (new tests), BR4/BR5 pages. Schema
+     sections §10–§12 are unchanged.
+  2. Extend the trigger to check BR3 on reassignment too (`UPDATE OF status, assignee_id` + the BR3 lookup on such
+     updates)? A schema change (ADR 0009).
+  3. Restrict the BR3 error translation to this call's own task (review finding SF3), or keep the documented behaviour?
+- **Closed by documentation, not code:** SF3 (see decision 3), N1/SF6 (after a failed save the task is detached, so
+  EF's "client wins" recovery saves nothing: retry by calling the service again), F2/T1 (see decision 2).
+- **Still `[uncertain]`:** Antigravity reading a root `AGENTS.md` and its MCP config; the checkpoint hook has only
+  been run by hand (it loads from the next Claude Code session); the "error using the connection" message on the first
+  `database update` (exit 0); the `xmin` token cannot be ablated in isolation; the PostgreSQL 18 `pg_constraint`
+  reason in the schema test; ADR 0005's non-ASCII lower-casing.
+- **Next steps:** prune the 5 finished agent worktrees under `.claude/worktrees/` and their `worktree-agent-*`
+  branches (needs the human's OK: it deletes files); optional test hardening (FOR SHARE timing, cancellation mid-save,
+  same-status update allowed by the trigger) and the skipped nits listed in `agents/bus/orch-to-D4-001.md`.
+- **History:** the human approved the spec at the N2 gate and four more decisions at the pre-implementation grill
+  (BR3/BR4 trigger, status filter, demo seed in `InitialCreate`, BR3 trigger error translated to the domain
+  exception); see [[log]].
 
 ## Pages
 
