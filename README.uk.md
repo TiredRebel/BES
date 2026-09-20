@@ -12,16 +12,16 @@
 
 ## Загальна високорівнева архітектура (High-Level System Context)
 
-[![Контекст системи та межі Bounded Context](docs/diagrams/system-context.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/system-context.html)
+[![Контекст системи та межі Bounded Context](docs/diagrams/system-context.visual-check.1440x900.light.png)](https://tiredrebel.github.io/BES/diagrams/system-context.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (система, зв'язки, теми Dark/Light)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/system-context.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (система, зв'язки, теми Dark/Light)](https://tiredrebel.github.io/BES/diagrams/system-context.html)**  
 > *Специфікація:* [`docs/diagrams/system-context.json`](docs/diagrams/system-context.json)
 
 ## Структура рішення (Solution layout)
 
-[![Карта архітектурних шарів та залежностей](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/solution-architecture.html)
+[![Карта архітектурних шарів та залежностей](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](https://tiredrebel.github.io/BES/diagrams/solution-architecture.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (5 проєктів, залежності, тестові контури)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/solution-architecture.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (5 проєктів, залежності, тестові контури)](https://tiredrebel.github.io/BES/diagrams/solution-architecture.html)**  
 > *Специфікація:* [`docs/diagrams/solution-architecture.json`](docs/diagrams/solution-architecture.json)
 
 | Проєкт (шлях) | Вміст |
@@ -71,9 +71,9 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 
 ## Where each business rule is enforced - Де забезпечується кожне бізнес-правило
 
-[![Кінцевий автомат життєвого циклу завдання](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/task-lifecycle.html)
+[![Кінцевий автомат життєвого циклу завдання](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](https://tiredrebel.github.io/BES/diagrams/task-lifecycle.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (FSM стани, переходи та правила BR1/BR4)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/task-lifecycle.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (FSM стани, переходи та правила BR1/BR4)](https://tiredrebel.github.io/BES/diagrams/task-lifecycle.html)**  
 > *Специфікація:* [`docs/diagrams/task-lifecycle.json`](docs/diagrams/task-lifecycle.json)
 
 | Правило | Формулювання | Доменний рівень (Domain) | Рівень бази даних (Database) | Прикладний сервіс (Application service) |

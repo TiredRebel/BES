@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management: Інтерактивні діаграми Archify</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --heading: #58a6ff;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --tag-bg: #21262d;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f6f8fa;
+        --card-bg: #ffffff;
+        --border: #d0d7de;
+        --text: #24292f;
+        --heading: #0969da;
+        --accent: #1f883d;
+        --accent-hover: #1a7f37;
+        --tag-bg: #eaeef2;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+    h1 {
+      color: var(--heading);
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    p.subtitle {
+      font-size: 1.1rem;
+      opacity: 0.85;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--heading);
+    }
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      object-position: top;
+      border-bottom: 1px solid var(--border);
+      background: #ffffff;
+    }
+    .card-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--heading);
+    }
+    .card-desc {
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 12px;
+      background: var(--tag-bg);
+      margin-bottom: 0.75rem;
+      font-family: monospace;
+    }
+    .btn {
+      display: inline-block;
+      text-align: center;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+    }
+    footer a { color: var(--heading); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Task Management: Каталог інтерактивних діаграм</h1>
+      <p class="subtitle">Архітектурні діаграми Archify стандарту <code>--quality showcase</code> для проєкту Task Management (PostgreSQL + EF Core).</p>
+    </header>
+
+    <div class="grid">
+      <!-- Diagram 1 -->
+      <div class="card">
+        <img src="diagrams/system-context.visual-check.1440x900.light.png" alt="Контекст системи">
+        <div class="card-body">
+          <span class="tag">architecture</span>
+          <h2 class="card-title">1. Контекст системи (System Context)</h2>
+          <p class="card-desc">Споживачі CRM (Manager, Worker, API Gateway), Task Management Bounded Context, доменне ядро, EF Core та інтеграція зі сховищем.</p>
+          <a class="btn" href="diagrams/system-context.html">Відкрити інтерактивну діаграму &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Diagram 2 -->
+      <div class="card">
+        <img src="diagrams/domain-model.visual-check.1440x900.light.png" alt="Доменна модель">
+        <div class="card-body">
+          <span class="tag">architecture</span>
+          <h2 class="card-title">2. Доменна модель (Domain Model ERD)</h2>
+          <p class="card-desc">Сутності Employee та TaskItem, зв'язки (Creator, Assignee) та інваріанти бізнес-правил BR1–BR5.</p>
+          <a class="btn" href="diagrams/domain-model.html">Відкрити інтерактивну діаграму &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Diagram 3 -->
+      <div class="card">
+        <img src="diagrams/task-lifecycle.visual-check.1440x900.light.png" alt="Життєвий цикл завдання">
+        <div class="card-body">
+          <span class="tag">lifecycle</span>
+          <h2 class="card-title">3. FSM Життєвого циклу (Task Lifecycle)</h2>
+          <p class="card-desc">Кінцевий автомат станів (New, InProgress, Completed, Cancelled), правила переходів та термінальні інваріанти BR1/BR4.</p>
+          <a class="btn" href="diagrams/task-lifecycle.html">Відкрити інтерактивну діаграму &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Diagram 4 -->
+      <div class="card">
+        <img src="diagrams/solution-architecture.visual-check.1440x900.light.png" alt="Архітектура рішення">
+        <div class="card-body">
+          <span class="tag">architecture</span>
+          <h2 class="card-title">4. Архітектура рішення (Solution Architecture)</h2>
+          <p class="card-desc">Структура 5 проєктів (Domain, Infrastructure, Application, UnitTests, IntegrationTests) та зв'язки з Testcontainers.</p>
+          <a class="btn" href="diagrams/solution-architecture.html">Відкрити інтерактивну діаграму &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Diagram 5 -->
+      <div class="card">
+        <img src="diagrams/defense-in-depth.visual-check.1440x900.light.png" alt="Defense in Depth">
+        <div class="card-body">
+          <span class="tag">workflow v2</span>
+          <h2 class="card-title">5. Defense in Depth (Дворівневий захист)</h2>
+          <p class="card-desc">Пайплайн захисту даних: мілісекундний C# Fail-Fast та залізобетонна цілісність PostgreSQL 17 (CHECK, тригери, OCC).</p>
+          <a class="btn" href="diagrams/defense-in-depth.html">Відкрити інтерактивну діаграму &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Diagram 6 -->
+      <div class="card">
+        <img src="diagrams/agile-iteration.visual-check.1440x900.light.png" alt="Agile Ітерація">
+        <div class="card-body">
+          <span class="tag">workflow v2</span>
+          <h2 class="card-title">6. Agile Ітерація та інженерні фази</h2>
+          <p class="card-desc">Agile-цикл: планування &amp; спайк (Zero-Code, Grill-Me, Human Gate), інкрементальна розробка (TDD, worktrees) та аудит.</p>
+          <a class="btn" href="diagrams/agile-iteration.html">Відкрити інтерактивну діаграму &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Повернутися до репозиторію: <a href="https://github.com/TiredRebel/BES">TiredRebel/BES на GitHub</a></p>
+    </footer>
+  </div>
+</body>
+</html>

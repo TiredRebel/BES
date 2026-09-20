@@ -12,16 +12,16 @@ Task Management is the internal CRM module for assigning, executing and controll
 
 ## High-level system context
 
-[![System Context & Bounded Context Map](docs/diagrams/system-context.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/system-context.html)
+[![System Context & Bounded Context Map](docs/diagrams/system-context.visual-check.1440x900.light.png)](https://tiredrebel.github.io/BES/diagrams/system-context.html)
 
-> 🔍 **[Open Interactive Archify Diagram (System, links, Dark/Light themes)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/system-context.html)**  
+> 🔍 **[Open Interactive Archify Diagram (System, links, Dark/Light themes)](https://tiredrebel.github.io/BES/diagrams/system-context.html)**  
 > *Specification:* [`docs/diagrams/system-context.json`](docs/diagrams/system-context.json)
 
 ## Solution layout
 
-[![Solution Architecture & Dependency Map](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/solution-architecture.html)
+[![Solution Architecture & Dependency Map](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](https://tiredrebel.github.io/BES/diagrams/solution-architecture.html)
 
-> 🔍 **[Open Interactive Archify Diagram (5 projects, dependencies, test suites)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/solution-architecture.html)**  
+> 🔍 **[Open Interactive Archify Diagram (5 projects, dependencies, test suites)](https://tiredrebel.github.io/BES/diagrams/solution-architecture.html)**  
 > *Specification:* [`docs/diagrams/solution-architecture.json`](docs/diagrams/solution-architecture.json)
 
 | Project (path) | Holds |
@@ -71,9 +71,9 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 
 ## Where each business rule is enforced
 
-[![Task Lifecycle State Machine](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/task-lifecycle.html)
+[![Task Lifecycle State Machine](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](https://tiredrebel.github.io/BES/diagrams/task-lifecycle.html)
 
-> 🔍 **[Open Interactive Archify Diagram (FSM states, transitions, BR1/BR4 rules)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/task-lifecycle.html)**  
+> 🔍 **[Open Interactive Archify Diagram (FSM states, transitions, BR1/BR4 rules)](https://tiredrebel.github.io/BES/diagrams/task-lifecycle.html)**  
 > *Specification:* [`docs/diagrams/task-lifecycle.json`](docs/diagrams/task-lifecycle.json)
 
 | Rule | Statement | Domain | Database | Application service |
