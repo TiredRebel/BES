@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Task Management: Task Lifecycle (State Machine)",
+    "quality_profile": "showcase",
+    "viewBox": [1060, 630],
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "Основний життєвий цикл",
+        "focus": ["new", "in_progress", "completed"],
+        "note": "Послідовний перехід: створення (New) -> робота (InProgress) -> фініш (Completed)."
+      },
+      {
+        "id": "cancellation-path",
+        "label": "Шляхи скасування",
+        "focus": ["new", "in_progress", "cancelled"],
+        "note": "Скасування завдання на етапі New або InProgress з переходом у Cancelled."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "main", "label": "Фази виконання (Execution Phases)" },
+    { "id": "waiting", "label": "Очікування (Waiting States)" },
+    { "id": "exceptions", "label": "Переривання (Interruptions)" },
+    { "id": "terminal", "label": "Термінальні стани (Terminal Exits)" }
+  ],
+  "states": [
+    { "id": "new", "type": "start", "label": "New", "sublabel": "Створено (BR2, BR3, BR5)", "lane": "main", "col": 0, "step": "01", "tag": "entry" },
+    { "id": "in_progress", "type": "active", "label": "InProgress", "sublabel": "В роботі", "lane": "main", "col": 1, "step": "02", "tag": "active" },
+    { "id": "completed", "type": "success", "label": "Completed", "sublabel": "Завершено (BR1, BR4)", "lane": "main", "col": 2, "step": "03", "tag": "terminal" },
+    { "id": "cancelled", "type": "failure", "label": "Cancelled", "sublabel": "Скасовано (BR1, BR4)", "lane": "terminal", "col": 0, "tag": "terminal" }
+  ],
+  "transitions": [
+    { "id": "start-work", "from": "new", "to": "in_progress", "label": "Взяття в роботу", "variant": "emphasis", "labelDy": -25 },
+    { "id": "complete-task", "from": "in_progress", "to": "completed", "label": "Завершення (BR1)", "variant": "emphasis", "labelDy": -25 },
+    { "id": "cancel-from-progress", "from": "in_progress", "to": "cancelled", "label": "Скасування", "variant": "security", "route": "drop" },
+    { "id": "cancel-from-new", "from": "new", "to": "cancelled", "label": "Скасування з New", "variant": "security", "route": "drop" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Основний цикл",
+      "items": [
+        "Створення в New (BR2, BR3, BR5)",
+        "Робота в InProgress та фініш у Completed (BR1)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Термінальні стани",
+      "items": [
+        "Completed та Cancelled фінальні (BR4)",
+        "xmin OCC захищає від конкурентних змін"
+      ]
+    }
+  ]
+}

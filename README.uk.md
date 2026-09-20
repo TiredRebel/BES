@@ -12,107 +12,17 @@
 
 ## Загальна високорівнева архітектура (High-Level System Context)
 
-```mermaid
-flowchart TD
-    %% 1. Споживачі
-    subgraph Users ["1. Користувачі та споживачі CRM"]
-        direction LR
-        Manager["Постановник<br/>(Manager / Creator)"]
-        Worker["Виконавець<br/>(Assignee)"]
-        ExternalAPI["API Gateway / Клієнти<br/>(Web API, Workers)"]
-    end
+[![Контекст системи та межі Bounded Context](docs/diagrams/system-context.visual-check.1440x900.light.png)](docs/diagrams/system-context.html)
 
-    %% 2. Bounded Context
-    subgraph BoundedContext ["2. Task Management Bounded Context (Рівень даних)"]
-        direction TB
-        Service["TaskService (Application Layer)<br/>• Сценарії: CreateTaskAsync, ChangeTaskStatusAsync, ListTasksAsync<br/>• Валідація вхідних даних, Keyset-пагінація, координація транзакцій"]
-        
-        Domain["Доменне ядро (Domain Layer)<br/>• Rich Domain Model: TaskItem, Employee, TaskItemStatus<br/>• Скінченний автомат FSM (FrozenDictionary)<br/>• Доменні інваріанти та бізнес-правила BR1-BR5"]
-        
-        EF["TaskManagementDbContext (Infrastructure Layer)<br/>• Fluent API конфігурації, міграції, сід-дані<br/>• Оптимістичне блокування (OCC через системний xmin)<br/>• Очищення Change Tracker при збоях (Detach)"]
-        
-        Service -->|Оперує сутностями| Domain
-        Domain -->|Персистенція стану| EF
-    end
-
-    %% 3. Сховище та події
-    subgraph StorageAndEvents ["3. Сховище даних та інтеграція"]
-        direction LR
-        Postgres[("PostgreSQL 17 Database<br/>• Таблиці employees та tasks<br/>• CHECK-констрейнти (BR1, BR2, BR5)<br/>• Тригер trg_tasks_br3_br4 (FOR SHARE, BR4)<br/>• Системна колонка xmin")]
-        Broker["Message Broker (RabbitMQ / Kafka)<br/>• Transactional Outbox Pattern<br/>• Доменні події: TaskCreated, TaskCompleted"]
-    end
-
-    %% Зв'язки
-    Users -->|Виклики Use Cases| Service
-    EF -->|Npgsql Provider / SQL| Postgres
-    EF -.->|Outbox події| Broker
-
-    classDef users fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef domain fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef ef fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px;
-    classDef storage fill:#eceff1,stroke:#37474f,stroke-width:2px;
-    classDef broker fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
-
-    class Manager,Worker,ExternalAPI users;
-    class Service service;
-    class Domain domain;
-    class EF ef;
-    class Postgres storage;
-    class Broker broker;
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (система, зв'язки, теми Dark/Light)](docs/diagrams/system-context.html)**  
+> *Специфікація:* [`docs/diagrams/system-context.json`](docs/diagrams/system-context.json)
 
 ## Структура рішення (Solution layout)
 
-```mermaid
-flowchart TD
-    subgraph Solution ["TaskManagement.slnx"]
-        subgraph Core ["Доменний шар (Zero Dependencies)"]
-            Domain["TaskManagement.Domain<br/>• TaskItem, Employee<br/>• TaskItemStatus<br/>• BusinessRuleViolationException"]
-        end
+[![Карта архітектурних шарів та залежностей](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](docs/diagrams/solution-architecture.html)
 
-        subgraph Infra ["Рівень інфраструктури"]
-            Infrastructure["TaskManagement.Infrastructure<br/>• TaskManagementDbContext<br/>• Fluent Configurations<br/>• Migration: InitialCreate<br/>• Seed Data (HasData)"]
-        end
-
-        subgraph App ["Прикладний рівень"]
-            Application["TaskManagement.Application<br/>• TaskService (Use Cases)<br/>• TaskListQuery &amp; Keyset Cursor<br/>• PagedResult&lt;T&gt;"]
-        end
-
-        subgraph Tests ["Тестові контури"]
-            UnitTests["TaskManagement.UnitTests<br/>• 56 тест-кейсів (Domain)<br/>• Швидкий зворотний зв'язок (ms)<br/>• Без БД / Без Docker"]
-            IntegrationTests["TaskManagement.IntegrationTests<br/>• 45 тест-кейсів (End-to-End)<br/>• Testcontainers + Postgres 17<br/>• Тести констрейнтів, тригерів та OCC"]
-        end
-    end
-
-    subgraph External ["Зовнішнє оточення"]
-        Postgres[("PostgreSQL 17<br/>• CHECK (BR1, BR2, BR5)<br/>• Trigger (BR3, BR4)<br/>• Concurrency (xmin OCC)")]
-    end
-
-    %% Залежності
-    Infrastructure -->|посилається| Domain
-    Application -->|посилається| Domain
-    Application -->|посилається| Infrastructure
-    
-    UnitTests -->|тестує| Domain
-    IntegrationTests -->|тестує| Domain
-    IntegrationTests -->|тестує| Infrastructure
-    IntegrationTests -->|тестує| Application
-    IntegrationTests -.->|Testcontainers| Postgres
-    Infrastructure -.->|Npgsql EF Core| Postgres
-
-    classDef core fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef infra fill:#ede7f6,stroke:#512da8,stroke-width:2px;
-    classDef app fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-    classDef tests fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
-    classDef ext fill:#eceff1,stroke:#455a64,stroke-width:2px;
-
-    class Domain core;
-    class Infrastructure infra;
-    class Application app;
-    class UnitTests,IntegrationTests tests;
-    class Postgres ext;
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (5 проєктів, залежності, тестові контури)](docs/diagrams/solution-architecture.html)**  
+> *Специфікація:* [`docs/diagrams/solution-architecture.json`](docs/diagrams/solution-architecture.json)
 
 | Проєкт (шлях) | Вміст |
 |---|---|
@@ -161,31 +71,10 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 
 ## Where each business rule is enforced - Де забезпечується кожне бізнес-правило
 
-```mermaid
-stateDiagram-v2
-    [*] --> New : Створення задачі (BR2, BR3, BR5)
-    
-    New --> InProgress : Взяття в роботу
-    New --> Cancelled : Скасування
-    
-    InProgress --> Completed : Завершення (BR1: CompletedAt = UTC)
-    InProgress --> Cancelled : Скасування
-    
-    note right of Completed
-        BR4: Фінальний статус
-        BR1: CompletedAt обов'язковий
-        Переходи з цього статусу заборонені
-    end note
-    
-    note right of Cancelled
-        BR4: Фінальний статус
-        BR1: CompletedAt = NULL
-        Переходи з цього статусу заборонені
-    end note
+[![Кінцевий автомат життєвого циклу завдання](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](docs/diagrams/task-lifecycle.html)
 
-    Completed --> [*]
-    Cancelled --> [*]
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (FSM стани, переходи та правила BR1/BR4)](docs/diagrams/task-lifecycle.html)**  
+> *Специфікація:* [`docs/diagrams/task-lifecycle.json`](docs/diagrams/task-lifecycle.json)
 
 | Правило | Формулювання | Доменний рівень (Domain) | Рівень бази даних (Database) | Прикладний сервіс (Application service) |
 |---|---|---|---|---|

@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Task Management: Solution Architecture & Project Dependencies",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "solution-deps",
+        "label": "Залежності проєктів",
+        "focus": ["domain", "infrastructure", "application"],
+        "note": "Чиста архітектура: Domain не залежить від жодного зовнішнього пакета."
+      },
+      {
+        "id": "test-pipeline",
+        "label": "Тестові контури",
+        "focus": ["unit_tests", "integration_tests", "postgres"],
+        "note": "Два незалежні цикли тестування: швидкісний юніт-контур та повний інтеграційний."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "domain",
+      "type": "backend",
+      "label": "TaskManagement.Domain",
+      "sublabel": "Zero Dependencies",
+      "pos": [360, 160],
+      "size": [190, 60],
+      "tag": "Core"
+    },
+    {
+      "id": "infrastructure",
+      "type": "backend",
+      "label": "TaskManagement.Infrastructure",
+      "sublabel": "EF Core, DbContext, Migrations",
+      "pos": [120, 290],
+      "size": [210, 64],
+      "tag": "Data Access"
+    },
+    {
+      "id": "application",
+      "type": "backend",
+      "label": "TaskManagement.Application",
+      "sublabel": "TaskService, Keyset Cursor",
+      "pos": [580, 290],
+      "size": [200, 64],
+      "tag": "Use Cases"
+    },
+    {
+      "id": "unit_tests",
+      "type": "frontend",
+      "label": "TaskManagement.UnitTests",
+      "sublabel": "56 Unit Tests (< 1 ms)",
+      "pos": [850, 160],
+      "size": [190, 60],
+      "tag": "Fast Feedback"
+    },
+    {
+      "id": "integration_tests",
+      "type": "frontend",
+      "label": "TaskManagement.IntegrationTests",
+      "sublabel": "45 Tests via Testcontainers",
+      "pos": [850, 290],
+      "size": [200, 64],
+      "tag": "PostgreSQL 17"
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL 17",
+      "sublabel": "CHECK, Triggers, xmin OCC",
+      "pos": [480, 440],
+      "size": [190, 60],
+      "brand": "postgresql",
+      "tag": "Docker / Aurora"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "TaskManagement.slnx (.NET 10 Solution)",
+      "wraps": ["domain", "infrastructure", "application", "unit_tests", "integration_tests"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "infra-domain",
+      "from": "infrastructure",
+      "to": "domain",
+      "label": "посилається",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "app-domain",
+      "from": "application",
+      "to": "domain",
+      "label": "посилається",
+      "fromSide": "top",
+      "toSide": "right"
+    },
+    {
+      "id": "app-infra",
+      "from": "application",
+      "to": "infrastructure",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "unit-domain",
+      "from": "unit_tests",
+      "to": "domain",
+      "label": "тестує",
+      "variant": "emphasis"
+    },
+    {
+      "id": "integ-app",
+      "from": "integration_tests",
+      "to": "application",
+      "label": "тестує",
+      "variant": "emphasis"
+    },
+    {
+      "id": "infra-pg",
+      "from": "infrastructure",
+      "to": "postgres",
+      "label": "Npgsql EF Core",
+      "variant": "emphasis"
+    },
+    {
+      "id": "integ-pg",
+      "from": "integration_tests",
+      "to": "postgres",
+      "label": "Testcontainers",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Domain Core",
+      "items": [
+        "Нуль зовнішніх залежностей (Zero Dependencies)",
+        "Rich Domain Model з валідацією BR1-BR5 у фабриках та методах",
+        "Використання C# 13/14 та .NET 10 BCL"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Infrastructure & Application",
+      "items": [
+        "Infrastructure: Fluent API мапінг, PostgreSQL міграції, сід-дані",
+        "Application: TaskService координує операції та Keyset-пагінацію"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Тестовий контур (101 тест)",
+      "items": [
+        "UnitTests: 56 тест-кейсів швидкої перевірки домену без СУБД",
+        "IntegrationTests: 45 тестів на реальному PostgreSQL 17 via Testcontainers"
+      ]
+    }
+  ]
+}

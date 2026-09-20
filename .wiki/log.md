@@ -399,3 +399,18 @@ Newest entry at the bottom.
 - Section 5 "Production Readiness" added to `README.md` v1.0.
 - Workspace root renamed to `E:\BES TT`; all configuration references updated.
 
+## 2026-09-20 · Antigravity · session 3 · Migrate README diagrams to Archify
+
+- Migrated all diagrams in `README.md`, `README.uk.md`, and `README.en.md` to Archify showcase-quality specifications:
+  - Authored 6 Archify diagram specifications in `docs/diagrams/`:
+    - `system-context.json` (Architecture)
+    - `domain-model.json` (Architecture)
+    - `task-lifecycle.json` (Lifecycle)
+    - `solution-architecture.json` (Architecture)
+    - `defense-in-depth.json` (Workflow v2)
+    - `agile-iteration.json` (Workflow v2)
+  - Generated standalone interactive HTML diagrams (`*.html`) with SVG rendering, zoom/pan controls, and dark/light mode toggles.
+  - Performed automated Playwright browser quality audit (`visual-check`) across 1440×900, 1600×1000, 1920×1080, and 2048×1320 viewports in both light and dark themes (all 9/9 checks passed, 0 errors, 0 warnings).
+  - Replaced all Mermaid diagram blocks in `README.md`, `README.uk.md`, and `README.en.md` with high-resolution visual previews linking to the interactive HTML diagrams and referencing the JSON specifications.
+- CodeGraph synced via `codegraph sync .`.
+

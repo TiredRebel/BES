@@ -1,0 +1,69 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Task Management: Agile Engineering Phases & Iteration Cycle",
+    "quality_profile": "showcase",
+    "animation": "trace",
+    "views": [
+      {
+        "id": "iteration-cycle",
+        "label": "Повний цикл ітерації",
+        "focus": ["backlog", "spec", "lead_gate", "scaffolding", "tdd", "migrations", "real_env", "audit", "retro"],
+        "note": "Від аналізу та стрес-перевірки через TDD і тести до аудиту результатів та ретроспективи."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "governance", "label": "1. Планування & Spike (Zero-Code)" },
+    { "id": "dev", "label": "2. Інкрементальна розробка" },
+    { "id": "qa", "label": "3. Зворотний зв'язок & Аудит" },
+    { "id": "retro", "label": "4. Ретроспектива & Адаптація" }
+  ],
+  "phases": [
+    { "id": "phase_plan", "label": "Планування & Архітектура", "fromCol": 0, "toCol": 1 },
+    { "id": "phase_exec", "label": "Розробка (TDD & Code)", "fromCol": 2, "toCol": 3 },
+    { "id": "phase_verify", "label": "Верифікація & Аудит", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["backlog", "spec", "lead_gate", "scaffolding", "tdd", "migrations", "real_env", "audit", "retro"],
+  "nodes": [
+    { "id": "backlog", "lane": "governance", "col": 0, "type": "frontend", "label": "Декомпозиція ТЗ", "sublabel": "Backlog & Scope", "width": 136 },
+    { "id": "spec", "lane": "governance", "col": 1, "type": "backend", "label": "Специфікація (N1)", "sublabel": "spec.md & ADR", "width": 136 },
+    { "id": "lead_gate", "lane": "governance", "col": 2, "type": "security", "label": "Lead Gate", "sublabel": "Схвалення Lead", "tag": "Human Gate", "width": 136 },
+    { "id": "scaffolding", "lane": "dev", "col": 2, "type": "backend", "label": "Git Worktrees", "sublabel": "Ізоляція середовищ", "width": 136 },
+    { "id": "tdd", "lane": "dev", "col": 3, "type": "backend", "label": "TDD & Domain", "sublabel": "Rich Domain Model", "width": 136 },
+    { "id": "migrations", "lane": "dev", "col": 4, "type": "database", "label": "EF Core Міграції", "sublabel": "PostgreSQL 17", "width": 136 },
+    { "id": "real_env", "lane": "qa", "col": 4, "type": "frontend", "label": "Testcontainers", "sublabel": "Реальний PG17", "width": 136 },
+    { "id": "audit", "lane": "qa", "col": 5, "type": "security", "label": "Audit Evidence", "sublabel": "101/101 тестів", "tag": "0 warnings", "width": 136 },
+    { "id": "retro", "lane": "retro", "col": 5, "type": "external", "label": "Ретроспектива", "sublabel": "Code Review", "width": 136 }
+  ],
+  "edges": [
+    { "id": "e-backlog-spec", "from": "backlog", "to": "spec" },
+    { "id": "e-spec-gate", "from": "spec", "to": "lead_gate", "label": "Grill-Me стрес-аналіз", "variant": "security" },
+    { "id": "e-gate-scaffold", "from": "lead_gate", "to": "scaffolding", "label": "затверджено", "variant": "emphasis" },
+    { "id": "e-scaffold-tdd", "from": "scaffolding", "to": "tdd" },
+    { "id": "e-tdd-migrations", "from": "tdd", "to": "migrations" },
+    { "id": "e-migrations-env", "from": "migrations", "to": "real_env", "label": "міграції готові", "variant": "emphasis" },
+    { "id": "e-env-audit", "from": "real_env", "to": "audit", "label": "тести виконано", "variant": "emphasis" },
+    { "id": "e-audit-retro", "from": "audit", "to": "retro" },
+    { "id": "e-retro-backlog", "from": "retro", "to": "backlog", "label": "новий цикл", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Spike & Human Gate",
+      "items": [
+        "Специфікація та стрес-аналіз через Grill-Me",
+        "Обов'язкове схвалення Lead перед кодом"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Ізоляція та аудит",
+      "items": [
+        "Розробка в ізольованих git worktree",
+        "101/101 тестів на реальному PostgreSQL 17"
+      ]
+    }
+  ]
+}

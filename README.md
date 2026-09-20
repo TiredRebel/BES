@@ -96,85 +96,17 @@
 
 #### Загальна високорівнева архітектура системи (High-Level System Context)
 
-```mermaid
-flowchart TD
-    %% 1. Споживачі
-    subgraph Users ["1. Користувачі та споживачі CRM"]
-        direction LR
-        Manager["Постановник<br/>(Manager / Creator)"]
-        Worker["Виконавець<br/>(Assignee)"]
-        ExternalAPI["API Gateway / Клієнти<br/>(Web API, Workers)"]
-    end
+[![Загальна високорівнева архітектура системи](docs/diagrams/system-context.visual-check.1440x900.light.png)](docs/diagrams/system-context.html)
 
-    %% 2. Bounded Context
-    subgraph BoundedContext ["2. Task Management Bounded Context (Рівень даних)"]
-        direction TB
-        Service["TaskService (Application Layer)<br/>• Сценарії: CreateTaskAsync, ChangeTaskStatusAsync, ListTasksAsync<br/>• Валідація вхідних даних, Keyset-пагінація, координація транзакцій"]
-        
-        Domain["Доменне ядро (Domain Layer)<br/>• Rich Domain Model: TaskItem, Employee, TaskItemStatus<br/>• Скінченний автомат FSM (FrozenDictionary)<br/>• Доменні інваріанти та бізнес-правила BR1-BR5"]
-        
-        EF["TaskManagementDbContext (Infrastructure Layer)<br/>• Fluent API конфігурації, міграції, сід-дані<br/>• Оптимістичне блокування (OCC через системний xmin)<br/>• Очищення Change Tracker при збоях (Detach)"]
-        
-        Service -->|Оперує сутностями| Domain
-        Domain -->|Персистенція стану| EF
-    end
-
-    %% 3. Сховище та події
-    subgraph StorageAndEvents ["3. Сховище даних та інтеграція"]
-        direction LR
-        Postgres[("PostgreSQL 17 Database<br/>• Таблиці employees та tasks<br/>• CHECK-констрейнти (BR1, BR2, BR5)<br/>• Тригер trg_tasks_br3_br4 (FOR SHARE, BR4)<br/>• Системна колонка xmin")]
-        Broker["Message Broker (RabbitMQ / Kafka)<br/>• Transactional Outbox Pattern<br/>• Доменні події: TaskCreated, TaskCompleted"]
-    end
-
-    %% Зв'язки
-    Users -->|Виклики Use Cases| Service
-    EF -->|Npgsql Provider / SQL| Postgres
-    EF -.->|Outbox події| Broker
-
-    classDef users fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef domain fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef ef fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px;
-    classDef storage fill:#eceff1,stroke:#37474f,stroke-width:2px;
-    classDef broker fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
-
-    class Manager,Worker,ExternalAPI users;
-    class Service service;
-    class Domain domain;
-    class EF ef;
-    class Postgres storage;
-    class Broker broker;
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (система, зв'язки, теми Dark/Light)](docs/diagrams/system-context.html)**  
+> *Специфікація:* [`docs/diagrams/system-context.json`](docs/diagrams/system-context.json)
 
 #### Модель сутностей та зв'язків (Domain Model)
 
-```mermaid
-flowchart LR
-    subgraph EmpCard ["Сутність Employee"]
-        direction TB
-        EmpHeader["<b>Employee</b>"]
-        EmpFields["• <b>Id:</b> uuid [PK]<br/>• <b>Name:</b> string (ПІБ співробітника)<br/>• <b>Email:</b> string [Unique, ix_employees_email]<br/>• <b>IsActive:</b> boolean [BR3: прапорець активності]"]
-        EmpHeader --- EmpFields
-    end
+[![Модель сутностей та зв'язків](docs/diagrams/domain-model.visual-check.1440x900.light.png)](docs/diagrams/domain-model.html)
 
-    subgraph TaskCard ["Сутність TaskItem"]
-        direction TB
-        TaskHeader["<b>TaskItem</b>"]
-        TaskFields["• <b>Id:</b> uuid [PK, GUID v7]<br/>• <b>Title:</b> string (назва, до 200 симв.)<br/>• <b>Description:</b> string (опціональний опис)<br/>• <b>Status:</b> TaskItemStatus (New, InProgress, Completed, Cancelled)<br/>• <b>PlannedStartAt:</b> timestamptz (план початку)<br/>• <b>DueAt:</b> timestamptz [BR2: >= planned_start_at]<br/>• <b>CompletedAt:</b> timestamptz [BR1: тільки для status = Completed]<br/>• <b>CreatorId:</b> uuid [FK, BR5: != AssigneeId]<br/>• <b>AssigneeId:</b> uuid [FK, BR3: IsActive]<br/>• <b>Xmin:</b> uint [OCC токен конкурентності]"]
-        TaskHeader --- TaskFields
-    end
-
-    EmpCard -->|"1..* створює (Creator, BR5)"| TaskCard
-    EmpCard -->|"0..* виконує (Assignee, BR3)"| TaskCard
-
-    classDef header fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef fields fill:#ffffff,stroke:#b0bec5,stroke-width:1px;
-    classDef card fill:#f8f9fa,stroke:#90caf9,stroke-width:2px;
-
-    class EmpHeader,TaskHeader header;
-    class EmpFields,TaskFields fields;
-    class EmpCard,TaskCard card;
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (доменні сутності, інваріанти BR1-BR5)](docs/diagrams/domain-model.html)**  
+> *Специфікація:* [`docs/diagrams/domain-model.json`](docs/diagrams/domain-model.json)
 
 ### 1.2. Деконструкція бізнес-правил (BR1-BR5)
 
@@ -193,31 +125,10 @@ flowchart LR
 
 #### Кінцевий автомат життєвого циклу завдання (State Machine)
 
-```mermaid
-stateDiagram-v2
-    [*] --> New : Створення задачі (BR2, BR3, BR5)
-    
-    New --> InProgress : Взяття в роботу
-    New --> Cancelled : Скасування
-    
-    InProgress --> Completed : Завершення (BR1: CompletedAt = UTC)
-    InProgress --> Cancelled : Скасування
-    
-    note right of Completed
-        BR4: Фінальний статус
-        BR1: CompletedAt обов'язковий
-        Переходи з цього статусу заборонені
-    end note
-    
-    note right of Cancelled
-        BR4: Фінальний статус
-        BR1: CompletedAt = NULL
-        Переходи з цього статусу заборонені
-    end note
+[![Кінцевий автомат життєвого циклу завдання](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](docs/diagrams/task-lifecycle.html)
 
-    Completed --> [*]
-    Cancelled --> [*]
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (FSM стани, переходи та правила BR1/BR4)](docs/diagrams/task-lifecycle.html)**  
+> *Специфікація:* [`docs/diagrams/task-lifecycle.json`](docs/diagrams/task-lifecycle.json)
 
 ### 1.3. Моделювання демо-даних (Seed Data) та роль неактивного співробітника
 
@@ -276,55 +187,10 @@ stateDiagram-v2
 
 #### Карта архітектурних шарів та залежностей
 
-```mermaid
-flowchart TD
-    subgraph Solution ["TaskManagement.slnx"]
-        subgraph Core ["Доменний шар (Zero Dependencies)"]
-            Domain["TaskManagement.Domain<br/>• TaskItem, Employee<br/>• TaskItemStatus<br/>• BusinessRuleViolationException"]
-        end
+[![Карта архітектурних шарів та залежностей](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](docs/diagrams/solution-architecture.html)
 
-        subgraph Infra ["Рівень інфраструктури"]
-            Infrastructure["TaskManagement.Infrastructure<br/>• TaskManagementDbContext<br/>• Fluent Configurations<br/>• Migration: InitialCreate<br/>• Seed Data (HasData)"]
-        end
-
-        subgraph App ["Прикладний рівень"]
-            Application["TaskManagement.Application<br/>• TaskService (Use Cases)<br/>• TaskListQuery &amp; Keyset Cursor<br/>• PagedResult&lt;T&gt;"]
-        end
-
-        subgraph Tests ["Тестові контури"]
-            UnitTests["TaskManagement.UnitTests<br/>• 56 тест-кейсів (Domain)<br/>• Швидкий зворотний зв'язок (ms)<br/>• Без БД / Без Docker"]
-            IntegrationTests["TaskManagement.IntegrationTests<br/>• 45 тест-кейсів (End-to-End)<br/>• Testcontainers + Postgres 17<br/>• Тести констрейнтів, тригерів та OCC"]
-        end
-    end
-
-    subgraph External ["Зовнішнє оточення"]
-        Postgres[("PostgreSQL 17<br/>• CHECK (BR1, BR2, BR5)<br/>• Trigger (BR3, BR4)<br/>• Concurrency (xmin OCC)")]
-    end
-
-    %% Залежності
-    Infrastructure -->|посилається| Domain
-    Application -->|посилається| Domain
-    Application -->|посилається| Infrastructure
-    
-    UnitTests -->|тестує| Domain
-    IntegrationTests -->|тестує| Domain
-    IntegrationTests -->|тестує| Infrastructure
-    IntegrationTests -->|тестує| Application
-    IntegrationTests -.->|Testcontainers| Postgres
-    Infrastructure -.->|Npgsql EF Core| Postgres
-
-    classDef core fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef infra fill:#ede7f6,stroke:#512da8,stroke-width:2px;
-    classDef app fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-    classDef tests fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
-    classDef ext fill:#eceff1,stroke:#455a64,stroke-width:2px;
-
-    class Domain core;
-    class Infrastructure infra;
-    class Application app;
-    class UnitTests,IntegrationTests tests;
-    class Postgres ext;
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (5 проєктів, залежності, тестові контури)](docs/diagrams/solution-architecture.html)**  
+> *Специфікація:* [`docs/diagrams/solution-architecture.json`](docs/diagrams/solution-architecture.json)
 
 ### 2.3. Концепція «Глибинного захисту» (Defense in Depth)
 
@@ -338,42 +204,10 @@ flowchart TD
 
 #### Пайплайн дворівневого захисту даних (Defense in Depth)
 
-```mermaid
-flowchart TD
-    Client(["Клієнтський виклик<br/>(Create / ChangeStatus)"]) --> AppService["TaskService (Application)<br/>• Координація транзакції<br/>• Валідація вхідних даних<br/>• TimeProvider (UTC)"]
-    
-    subgraph Level1 ["Рівень 1: C# Fail-Fast (Мілісекундний захист)"]
-        AppService --> DomainGuard{"Доменні Guards (TaskItem)<br/>• BR1: CompletedAt iff Completed<br/>• BR2: DueAt &gt;= PlannedStartAt<br/>• BR3: Assignee.IsActive<br/>• BR4: Заборона зміни термінальних<br/>• BR5: Assignee != Creator"}
-        DomainGuard -->|Порушення правила| DomainEx["throw BusinessRuleViolationException<br/>(Миттєва відмова без звернення до БД)"]
-    end
-    
-    DomainGuard -->|Валідно| DbContext["TaskManagementDbContext (EF Core)<br/>• Change Tracker<br/>• Optimistic Concurrency (xmin)<br/>• SaveChangesAsync"]
-    
-    subgraph Level2 ["Рівень 2: PostgreSQL 17 (Залізобетонна цілісність даних)"]
-        DbContext --> SqlExec["SQL INSERT / UPDATE"]
-        SqlExec --> CheckConstraints{"CHECK Constraints<br/>• ck_tasks_br1...<br/>• ck_tasks_br2...<br/>• ck_tasks_br5..."}
-        CheckConstraints -->|Порушення CHECK| DbCheckErr["PostgresException: 23514<br/>(check_violation)"]
-        
-        CheckConstraints -->|OK| Trigger{"Тригер trg_tasks_br3_br4<br/>• BR3: SELECT is_active FOR SHARE<br/>• BR4: заборона UPDATE status"}
-        Trigger -->|Неактивний / Фінальний| DbTrigErr["PostgresException: P0001<br/>(raise_exception)"]
-        
-        Trigger -->|OK| OccCheck{"xmin OCC Check<br/>Рядок змінено паралельно?"}
-        OccCheck -->|Конфлікт| ConcurrencyErr["DbUpdateConcurrencyException"]
-        OccCheck -->|Успіх| Commit[("COMMIT<br/>Дані гарантовано цілісні")]
-    end
+[![Пайплайн дворівневого захисту даних](docs/diagrams/defense-in-depth.visual-check.1440x900.light.png)](docs/diagrams/defense-in-depth.html)
 
-    classDef client fill:#f5f5f5,stroke:#9e9e9e,stroke-width:2px;
-    classDef level1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef level2 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef error fill:#ffebee,stroke:#c62828,stroke-width:2px;
-    classDef success fill:#e8f8f5,stroke:#00897b,stroke-width:2px;
-
-    class Client client;
-    class AppService,DomainGuard level1;
-    class DbContext,SqlExec,CheckConstraints,Trigger,OccCheck level2;
-    class DomainEx,DbCheckErr,DbTrigErr,ConcurrencyErr error;
-    class Commit success;
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (C# Fail-Fast, PostgreSQL 17 інваріанти, OCC)](docs/diagrams/defense-in-depth.html)**  
+> *Специфікація:* [`docs/diagrams/defense-in-depth.json`](docs/diagrams/defense-in-depth.json)
 
 ### 2.4. Стратегія конкурентності та блокувань (OCC через xmin)
 
@@ -415,34 +249,10 @@ flowchart TD
    - **Інтеграційні цикли (Shift-Left):** 45 тестів на реальному PostgreSQL 17 через Testcontainers перевіряють констрейнти та тригери за лічені секунди.
    - **Аудит та ретроспектива:** Результати виконання фіксуються в Audit Evidence ([Розділ 4.7](#47-результати-перевірки-audit-evidence)), а відкриті питання та нові гіпотези (наприклад, розширення тригера BR3) формують беклог наступних ітерацій у `.wiki/index.md`.
 
-```mermaid
-flowchart TD
-    subgraph Iteration ["Agile Ітерація (Sprint / Workstream)"]
-        subgraph Plan ["1. Планування & Spike (Zero-Code)"]
-            A["Декомпозиція Backlog & ТЗ"] --> B["Специфікація (N1: spec.md, ADR)"]
-            B --> C["Grill-Me (Стрес-аналіз)"]
-            C --> D["Fresh Context Review (N2)"]
-            D --> E{{"Human Gate<br/>(Схвалення Lead / PO)"}}
-        end
+[![Agile Ітерація та інженерні фази](docs/diagrams/agile-iteration.visual-check.1440x900.light.png)](docs/diagrams/agile-iteration.html)
 
-        subgraph Exec ["2. Інкрементальна розробка"]
-            E -->|Затверджено| F["Scaffolding & Git Worktrees"]
-            F --> G["TDD / Rich Domain Model"]
-            G --> H["EF Core + PG17 Міграції"]
-        end
-
-        subgraph Verify ["3. Зворотний зв'язок & Аудит"]
-            H --> I["Fast Tests (Unit &lt; 1 ms)"]
-            I --> J["Real Env (Testcontainers)"]
-            J --> K["Audit Evidence (101/101)"]
-        end
-
-        subgraph Retro ["4. Ретроспектива & Адаптація"]
-            K --> L["Retrospective & Code Review"]
-            L -->|Оптимізації / Нові ітерації| A
-        end
-    end
-```
+> 🔍 **[Відкрити інтерактивну діаграму Archify (Agile фази, TDD, worktrees, аудит)](docs/diagrams/agile-iteration.html)**  
+> *Специфікація:* [`docs/diagrams/agile-iteration.json`](docs/diagrams/agile-iteration.json)
 
 ### 2.6. Життєвий цикл даних: Hot/Cold Data, архівування та часткові індекси
 

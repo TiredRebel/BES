@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Task Management: Defense in Depth (Дворівневий захист даних)",
+    "quality_profile": "showcase",
+    "animation": "trace",
+    "viewBox": [1180, 660],
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "Успішний пайплайн",
+        "focus": ["client", "service", "domain_guard", "dbcontext", "db_check", "commit"],
+        "note": "Успішний прохід через C# валідацію, EF Core та констрейнти PostgreSQL 17."
+      },
+      {
+        "id": "error-paths",
+        "label": "Точки відмов",
+        "focus": ["domain_guard", "domain_ex", "db_check", "db_err", "commit", "concurrency_ex"],
+        "note": "Ізоляція трьох точок відмов: C# виняток, помилка констрейнту СУБД та конфлікт OCC."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "app", "label": "Клієнт та Application Layer" },
+    { "id": "csharp", "label": "Рівень 1: C# Fail-Fast" },
+    { "id": "postgres", "label": "Рівень 2: PostgreSQL 17" },
+    { "id": "exceptions", "label": "Винятки та помилки", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "csharp_phase", "label": "C# Валідація", "fromCol": 0, "toCol": 2 },
+    { "id": "db_phase", "label": "PostgreSQL 17 Валідація", "fromCol": 3, "toCol": 5 }
+  ],
+  "mainPath": ["client", "service", "domain_guard", "dbcontext", "db_check", "commit"],
+  "nodes": [
+    { "id": "client", "lane": "app", "col": 0, "type": "frontend", "label": "Клієнтський виклик", "sublabel": "Create / ChangeStatus", "width": 154 },
+    { "id": "service", "lane": "app", "col": 1, "type": "backend", "label": "TaskService", "sublabel": "Координація транзакції", "tag": "Application", "width": 154 },
+    { "id": "domain_guard", "lane": "csharp", "col": 2, "type": "security", "label": "Доменні Guards", "sublabel": "BR1-BR5 валідація", "tag": "Fail-Fast", "width": 154 },
+    { "id": "domain_ex", "lane": "exceptions", "col": 2, "type": "security", "label": "BusinessRuleViolation", "sublabel": "Миттєва відмова (C#)", "tag": "throw", "width": 154 },
+    { "id": "dbcontext", "lane": "app", "col": 3, "type": "backend", "label": "DbContext", "sublabel": "OCC SaveChangesAsync", "tag": "EF Core", "width": 154 },
+    { "id": "db_check", "lane": "postgres", "col": 4, "type": "security", "label": "CHECK & Trigger", "sublabel": "ck_tasks & trg_tasks", "tag": "PG17", "width": 154 },
+    { "id": "db_err", "lane": "exceptions", "col": 4, "type": "security", "label": "PostgresException", "sublabel": "23514 / P0001", "tag": "rollback", "width": 154 },
+    { "id": "commit", "lane": "postgres", "col": 5, "type": "database", "label": "COMMIT", "sublabel": "Гарантія цілісності", "tag": "Success", "width": 154 },
+    { "id": "concurrency_ex", "lane": "exceptions", "col": 5, "type": "security", "label": "ConcurrencyException", "sublabel": "Конфлікт xmin OCC", "tag": "retry", "width": 154 }
+  ],
+  "edges": [
+    { "id": "e-client-service", "from": "client", "to": "service" },
+    { "id": "e-service-guard", "from": "service", "to": "domain_guard", "label": "виклик" },
+    { "id": "e-guard-ex", "from": "domain_guard", "to": "domain_ex", "label": "порушення", "variant": "security", "role": "error" },
+    { "id": "e-guard-db", "from": "domain_guard", "to": "dbcontext", "label": "валідно", "variant": "emphasis" },
+    { "id": "e-db-check", "from": "dbcontext", "to": "db_check", "label": "SQL exec", "variant": "emphasis" },
+    { "id": "e-check-err", "from": "db_check", "to": "db_err", "label": "помилка СУБД", "variant": "security", "role": "error" },
+    { "id": "e-check-commit", "from": "db_check", "to": "commit", "label": "інваріанти OK", "variant": "emphasis" },
+    { "id": "e-commit-occ", "from": "commit", "to": "concurrency_ex", "label": "конфлікт xmin", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "C# Fail-Fast",
+      "items": [
+        "Миттєва перевірка BR1-BR5 без звернення до БД",
+        "Генерується BusinessRuleViolationException"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "PostgreSQL 17",
+      "items": [
+        "CHECK (BR1, BR2, BR5) та тригер (BR3, BR4)",
+        "xmin OCC захищає від race conditions"
+      ]
+    }
+  ]
+}

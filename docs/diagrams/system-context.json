@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Task Management: High-Level System Context",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "primary-flow",
+        "label": "Основний потік",
+        "focus": ["manager", "service", "domain", "dbcontext", "postgres"],
+        "note": "Виконання бізнес-операцій від споживача до збереження в базі даних."
+      },
+      {
+        "id": "integration-flow",
+        "label": "Інтеграція та події",
+        "focus": ["gateway", "service", "dbcontext", "broker"],
+        "note": "Асинхронна публікація доменних подій через Transactional Outbox."
+      }
+    ]
+  },
+  "components": [
+    { "id": "manager", "type": "external", "label": "Постановник", "sublabel": "Manager / Creator", "pos": [50, 160], "size": [140, 56] },
+    { "id": "worker", "type": "external", "label": "Виконавець", "sublabel": "Assignee", "pos": [50, 280], "size": [140, 56] },
+    { "id": "gateway", "type": "external", "label": "API Gateway", "sublabel": "Web API / Клієнти", "pos": [50, 400], "size": [140, 56] },
+    { "id": "service", "type": "backend", "label": "TaskService", "sublabel": "Application Layer", "pos": [310, 280], "size": [150, 64], "tag": "Use Cases" },
+    { "id": "domain", "type": "backend", "label": "Доменне ядро", "sublabel": "Rich Domain Model", "pos": [570, 280], "size": [150, 64], "tag": "BR1-BR5 & FSM" },
+    { "id": "dbcontext", "type": "backend", "label": "TaskManagementDbContext", "sublabel": "Infrastructure Layer", "pos": [850, 280], "size": [170, 64], "tag": "OCC via xmin" },
+    { "id": "postgres", "type": "database", "label": "PostgreSQL 17", "sublabel": "employees & tasks", "pos": [1130, 200], "size": [150, 60], "brand": "postgresql", "tag": "CHECK & Triggers" },
+    { "id": "broker", "type": "messagebus", "label": "Message Broker", "sublabel": "RabbitMQ / Kafka", "pos": [1130, 360], "size": [150, 60], "tag": "Transactional Outbox" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "1. Користувачі та споживачі CRM", "wraps": ["manager", "worker", "gateway"] },
+    { "kind": "region", "label": "2. Task Management Bounded Context (Рівень даних)", "wraps": ["service", "domain", "dbcontext"] },
+    { "kind": "region", "label": "3. Сховище даних та інтеграція", "wraps": ["postgres", "broker"] }
+  ],
+  "connections": [
+    { "id": "manager-service", "from": "manager", "to": "service", "label": "Use Cases" },
+    { "id": "worker-service", "from": "worker", "to": "service" },
+    { "id": "gateway-service", "from": "gateway", "to": "service", "label": "REST / RPC" },
+    { "id": "service-domain", "from": "service", "to": "domain", "label": "Оперує сутностями", "variant": "emphasis" },
+    { "id": "domain-ef", "from": "domain", "to": "dbcontext", "label": "Персистенція стану", "variant": "emphasis" },
+    { "id": "ef-postgres", "from": "dbcontext", "to": "postgres", "label": "Npgsql / SQL", "variant": "emphasis" },
+    { "id": "ef-broker", "from": "dbcontext", "to": "broker", "label": "Outbox події", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Споживачі", "items": ["Постановник та виконавець взаємодіють через CRM-сценарії", "API Gateway транслює зовнішні запити до TaskService"] },
+    { "dot": "emerald", "title": "Bounded Context", "items": ["TaskService валідує запити та керує транзакціями", "Доменне ядро гарантує інваріанти BR1-BR5 та переходи FSM", "DbContext забезпечує оптимістичне блокування (xmin)"] },
+    { "dot": "rose", "title": "Сховище та події", "items": ["PostgreSQL 17 перевіряє CHECK-констрейнти та тригери", "Transactional Outbox публікує події TaskCreated / TaskCompleted"] }
+  ]
+}

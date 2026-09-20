@@ -12,107 +12,17 @@ Task Management is the internal CRM module for assigning, executing and controll
 
 ## High-level system context
 
-```mermaid
-flowchart TD
-    %% 1. Consumers
-    subgraph Users ["1. CRM Users & Consumers"]
-        direction LR
-        Manager["Creator<br/>(Manager)"]
-        Worker["Assignee<br/>(Specialist)"]
-        ExternalAPI["API Gateway / Clients<br/>(Web API, Workers)"]
-    end
+[![System Context & Bounded Context Map](docs/diagrams/system-context.visual-check.1440x900.light.png)](docs/diagrams/system-context.html)
 
-    %% 2. Bounded Context
-    subgraph BoundedContext ["2. Task Management Bounded Context (Data Layer)"]
-        direction TB
-        Service["TaskService (Application Layer)<br/>• Use cases: CreateTaskAsync, ChangeTaskStatusAsync, ListTasksAsync<br/>• Input validation, Keyset pagination, transaction coordination"]
-        
-        Domain["Domain Core (Domain Layer)<br/>• Rich Domain Model: TaskItem, Employee, TaskItemStatus<br/>• Finite State Machine FSM (FrozenDictionary)<br/>• Invariants & Business Rules BR1-BR5"]
-        
-        EF["TaskManagementDbContext (Infrastructure Layer)<br/>• Fluent API mapping, migrations, seed data<br/>• Optimistic Concurrency Control (OCC via xmin)<br/>• Failed-Save Cleanup (Detach)"]
-        
-        Service -->|Operates on entities| Domain
-        Domain -->|Persists state| EF
-    end
-
-    %% 3. Storage & Events
-    subgraph StorageAndEvents ["3. Persistence & Integration"]
-        direction LR
-        Postgres[("PostgreSQL 17 Database<br/>• Tables: employees, tasks<br/>• CHECK constraints (BR1, BR2, BR5)<br/>• Trigger trg_tasks_br3_br4 (FOR SHARE, BR4)<br/>• System column xmin")]
-        Broker["Message Broker (RabbitMQ / Kafka)<br/>• Transactional Outbox Pattern<br/>• Domain Events: TaskCreated, TaskCompleted"]
-    end
-
-    %% Links
-    Users -->|Invokes use cases| Service
-    EF -->|Npgsql Provider / SQL| Postgres
-    EF -.->|Outbox events| Broker
-
-    classDef users fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef domain fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef ef fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px;
-    classDef storage fill:#eceff1,stroke:#37474f,stroke-width:2px;
-    classDef broker fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
-
-    class Manager,Worker,ExternalAPI users;
-    class Service service;
-    class Domain domain;
-    class EF ef;
-    class Postgres storage;
-    class Broker broker;
-```
+> 🔍 **[Open Interactive Archify Diagram (System, links, Dark/Light themes)](docs/diagrams/system-context.html)**  
+> *Specification:* [`docs/diagrams/system-context.json`](docs/diagrams/system-context.json)
 
 ## Solution layout
 
-```mermaid
-flowchart TD
-    subgraph Solution ["TaskManagement.slnx"]
-        subgraph Core ["Domain Layer (Zero Dependencies)"]
-            Domain["TaskManagement.Domain<br/>• TaskItem, Employee<br/>• TaskItemStatus<br/>• BusinessRuleViolationException"]
-        end
+[![Solution Architecture & Dependency Map](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](docs/diagrams/solution-architecture.html)
 
-        subgraph Infra ["Infrastructure Layer"]
-            Infrastructure["TaskManagement.Infrastructure<br/>• TaskManagementDbContext<br/>• Fluent Configurations<br/>• Migration: InitialCreate<br/>• Seed Data (HasData)"]
-        end
-
-        subgraph App ["Application Layer"]
-            Application["TaskManagement.Application<br/>• TaskService (Use Cases)<br/>• TaskListQuery &amp; Keyset Cursor<br/>• PagedResult&lt;T&gt;"]
-        end
-
-        subgraph Tests ["Test Suites"]
-            UnitTests["TaskManagement.UnitTests<br/>• 56 test cases (Domain)<br/>• Fast feedback loop (ms)<br/>• No DB / No Docker required"]
-            IntegrationTests["TaskManagement.IntegrationTests<br/>• 45 test cases (End-to-End)<br/>• Testcontainers + Postgres 17<br/>• Constraints, triggers, OCC tests"]
-        end
-    end
-
-    subgraph External ["External Environment"]
-        Postgres[("PostgreSQL 17<br/>• CHECK (BR1, BR2, BR5)<br/>• Trigger (BR3, BR4)<br/>• Concurrency (xmin OCC)")]
-    end
-
-    %% Dependencies
-    Infrastructure -->|references| Domain
-    Application -->|references| Domain
-    Application -->|references| Infrastructure
-    
-    UnitTests -->|tests| Domain
-    IntegrationTests -->|tests| Domain
-    IntegrationTests -->|tests| Infrastructure
-    IntegrationTests -->|tests| Application
-    IntegrationTests -.->|Testcontainers| Postgres
-    Infrastructure -.->|Npgsql EF Core| Postgres
-
-    classDef core fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef infra fill:#ede7f6,stroke:#512da8,stroke-width:2px;
-    classDef app fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-    classDef tests fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
-    classDef ext fill:#eceff1,stroke:#455a64,stroke-width:2px;
-
-    class Domain core;
-    class Infrastructure infra;
-    class Application app;
-    class UnitTests,IntegrationTests tests;
-    class Postgres ext;
-```
+> 🔍 **[Open Interactive Archify Diagram (5 projects, dependencies, test suites)](docs/diagrams/solution-architecture.html)**  
+> *Specification:* [`docs/diagrams/solution-architecture.json`](docs/diagrams/solution-architecture.json)
 
 | Project (path) | Holds |
 |---|---|
@@ -161,31 +71,10 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 
 ## Where each business rule is enforced
 
-```mermaid
-stateDiagram-v2
-    [*] --> New : Create task (BR2, BR3, BR5)
-    
-    New --> InProgress : Start execution
-    New --> Cancelled : Cancel task
-    
-    InProgress --> Completed : Finish execution (BR1: CompletedAt = UTC)
-    InProgress --> Cancelled : Cancel task
-    
-    note right of Completed
-        BR4: Final status
-        BR1: CompletedAt is required
-        Transitions out are forbidden
-    end note
-    
-    note right of Cancelled
-        BR4: Final status
-        BR1: CompletedAt is NULL
-        Transitions out are forbidden
-    end note
+[![Task Lifecycle State Machine](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](docs/diagrams/task-lifecycle.html)
 
-    Completed --> [*]
-    Cancelled --> [*]
-```
+> 🔍 **[Open Interactive Archify Diagram (FSM states, transitions, BR1/BR4 rules)](docs/diagrams/task-lifecycle.html)**  
+> *Specification:* [`docs/diagrams/task-lifecycle.json`](docs/diagrams/task-lifecycle.json)
 
 | Rule | Statement | Domain | Database | Application service |
 |---|---|---|---|---|

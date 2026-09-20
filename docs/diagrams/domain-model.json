@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Task Management: Domain Model",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "entities",
+        "label": "Сутності та зв'язки",
+        "focus": ["employee", "task_item"],
+        "note": "Зв'язки між співробітниками та завданнями за правилами BR3 та BR5."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "employee",
+      "type": "database",
+      "label": "Employee",
+      "sublabel": "Сутність співробітника",
+      "pos": [80, 240],
+      "size": [220, 72],
+      "tag": "Aggregate Root"
+    },
+    {
+      "id": "task_item",
+      "type": "database",
+      "label": "TaskItem",
+      "sublabel": "Сутність завдання",
+      "pos": [600, 240],
+      "size": [240, 72],
+      "tag": "Rich Domain Model"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Доменні сутності (Domain Layer)",
+      "wraps": ["employee", "task_item"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "emp-creator-task",
+      "from": "employee",
+      "to": "task_item",
+      "label": "1..* створює (Creator, BR5)",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -45
+    },
+    {
+      "id": "emp-assignee-task",
+      "from": "employee",
+      "to": "task_item",
+      "label": "0..* виконує (Assignee, BR3)",
+      "variant": "default",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 45
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Employee (Співробітник)",
+      "items": [
+        "Id: uuid [PK, первинний ключ]",
+        "Name: string [ПІБ, валідовано C# + btrim]",
+        "Email: string [Унікальний індекс ix_employees_email]",
+        "IsActive: boolean [BR3: прапорець активності]"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "TaskItem (Завдання)",
+      "items": [
+        "Id: uuid [PK, GUID v7 послідовний]",
+        "Title: string (до 200 симв.) & Description (опціональний)",
+        "Status: TaskItemStatus (New, InProgress, Completed, Cancelled)",
+        "PlannedStartAt & DueAt [BR2: DueAt >= PlannedStartAt]",
+        "CompletedAt [BR1: тільки для status = Completed]",
+        "CreatorId [FK, BR5] & AssigneeId [FK, BR3]",
+        "Xmin: uint [OCC токен версії рядка]"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Доменні інваріанти (BR1-BR5)",
+      "items": [
+        "BR1: CompletedAt обов'язковий і дозволений виключно для Completed",
+        "BR2: DueAt не може бути раніше за PlannedStartAt",
+        "BR3: Призначення дозволено тільки активним (IsActive = true)",
+        "BR5: Постановник та виконавець не можуть збігатися (Creator != Assignee)"
+      ]
+    }
+  ]
+}
