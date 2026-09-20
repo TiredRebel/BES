@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br4-en
 title: "BR4: Completed and Cancelled are final"
-type: rule
+type: BusinessRule
+description: Business rule BR4 - Completed and Cancelled are terminal statuses, enforced in domain and DB trigger
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[br1-completed-at]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br4, state-machine, trigger, immutability]
+related: ["spec.en.md", "task-item.en.md", "br1-completed-at.en.md"]
 ---
 
 # BR4: `Completed` and `Cancelled` are final

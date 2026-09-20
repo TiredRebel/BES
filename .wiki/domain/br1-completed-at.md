@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br1
 title: "BR1: CompletedAt встановлюється тоді й тільки тоді, коли статус = Completed"
-type: rule
+type: BusinessRule
+description: Бізнес-правило BR1 - часова мітка CompletedAt фіксується виключно при переході в статус Completed
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[br4-final-statuses]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br1, validation, database-check]
+related: ["spec.md", "task-item.md", "br4-final-statuses.md"]
 ---
 
 # BR1: `CompletedAt` обов'язковий тоді й тільки тоді, коли статус = `Completed`

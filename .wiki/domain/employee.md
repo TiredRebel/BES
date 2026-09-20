@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: entity-employee
 title: Employee (сутність)
-type: entity
+type: Entity
+description: Доменна сутність співробітника (Employee), правила валідації, життєвий цикл та обмеження зв'язків
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[br3-inactive-assignee]]", "[[br5-no-self-assignment]]"]
+updated: 2026-09-20
+tags: [okf, domain, entity, employee, crm]
+related: ["spec.md", "task-item.md", "br3-inactive-assignee.md", "br5-no-self-assignment.md"]
 ---
 
 # Співробітник (Employee)

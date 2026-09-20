@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: domain-spec
 title: Модель даних та контракти (Специфікація)
-type: spec
+type: Spec
+description: Повна специфікація моделі даних, контрактів, правил BR1-BR5 та сценаріїв використання рівня даних Task Management
 status: approved
-updated: 2026-09-18
-related: ["[[employee]]", "[[task-item]]", "[[br1-completed-at]]", "[[br2-due-not-before-start]]", "[[br3-inactive-assignee]]", "[[br4-final-statuses]]", "[[br5-no-self-assignment]]", "[[decisions/index]]", "[[index]]"]
+updated: 2026-09-20
+tags: [okf, spec, domain, contracts, efcore, postgresql]
+related: ["employee.md", "task-item.md", "br1-completed-at.md", "br2-due-not-before-start.md", "br3-inactive-assignee.md", "br4-final-statuses.md", "br5-no-self-assignment.md", "../decisions/index.md", "../index.md"]
 ---
 
 # Рівень даних Task Management: Специфікація

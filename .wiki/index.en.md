@@ -1,20 +1,36 @@
 ---
-title: Wiki index
-type: index
+okf_version: "0.2"
+id: task-management-knowledge-index-en
+title: Wiki index (OKF Index)
+type: Index
+description: Compact semantic memory and decision-making retrieval map for AI agents in Open Knowledge Format (OKF v0.2)
 status: active
-updated: 2026-09-19
-related: ["[[log]]", "[[codemap]]", "[[spec]]", "[[decisions/index]]"]
+updated: 2026-09-20
+tags: [okf, knowledge-bundle, crm, data-layer, dotnet, postgresql]
+related: ["codemap.md", "domain/spec.en.md", "decisions/index.en.md", "log.md"]
 ---
 
-# Task Management data layer: wiki index
+# Task Management data layer: wiki index (OKF Index)
 
 [ Українська ](index.md) · [ **English** ]
 
-Task Management is the internal CRM module for assigning, executing and controlling employees' tasks. This repo is
-its data layer (PostgreSQL + EF Core).
+**Task Management** is the internal CRM module for assigning, executing and controlling employees' tasks. This repo is its data layer (PostgreSQL + EF Core).
 
-Read this page first in every session. Instructions for agents live in `AGENTS.md`; this wiki holds the
-project's state and knowledge. Plain Markdown with YAML frontmatter and `[[wikilinks]]`, so Obsidian can open it.
+This directory serves as the official **Open Knowledge Format (OKF v0.2)** knowledge bundle of the project. It provides compact project memory and structured decision-making context for coding agents (Claude Code, Antigravity, Codex, Cursor, AWS Bedrock) and developers. Instructions for agents live in `AGENTS.md`. Plain Markdown with typed YAML frontmatter and relative links, fully compatible with OKF Reader / OKF Workbench viewers and Obsidian.
+
+## OKF Retrieval Map
+
+For rapid decision-making without blind discovery, agents consult these typed OKF concepts:
+
+| Need / Agent Task | Recommended Document to Read |
+|---|---|
+| **Resume work / Restore context** | Newest checkpoint in [checkpoints/](checkpoints/) and last entries in [log.md](log.md) |
+| **Syntax code graph, AST and dependencies** | [codemap.md](codemap.md) (materialized CodeGraph AST) |
+| **Complete data model and contracts** | [domain/spec.en.md](domain/spec.en.md) (N1 specification) |
+| **Domain entities** | [domain/employee.en.md](domain/employee.en.md), [domain/task-item.en.md](domain/task-item.en.md) |
+| **Business rules (BR1-BR5)** | [BR1](domain/br1-completed-at.en.md), [BR2](domain/br2-due-not-before-start.en.md), [BR3](domain/br3-inactive-assignee.en.md), [BR4](domain/br4-final-statuses.en.md), [BR5](domain/br5-no-self-assignment.en.md) |
+| **Architecture Decision Records (ADR)** | [decisions/index.en.md](decisions/index.en.md) (ADR 0001-0009) |
+| **Execution DAG graph** | [plan/graph.yaml](plan/graph.yaml) |
 
 ## Current state (updated 2026-09-19)
 

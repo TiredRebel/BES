@@ -1,9 +1,13 @@
 ---
-title: Code map
-type: codemap
-status: generated
-updated: 2026-09-18
-related: ["[[index]]", "[[spec]]"]
+okf_version: "0.2"
+id: codemap
+title: Карта коду та синтаксичний граф (Code Map)
+type: CodeMap
+description: Матеріалізований граф синтаксичних символів, залежностей та зв'язків компонентів з індексу CodeGraph
+status: active
+updated: 2026-09-20
+tags: [okf, codemap, codegraph, ast, architecture]
+related: ["index.md", "domain/spec.md"]
 ---
 
 # Code map

@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: adr-index-en
 title: Architecture decisions
-type: decision-index
+type: Index
+description: Register and index of architecture decision records (ADR 0001-0009) for Task Management Data Layer
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[index]]"]
+updated: 2026-09-20
+tags: [okf, adr, architecture-decisions, index]
+related: ["../domain/spec.en.md", "../index.en.md"]
 ---
 
 # Architecture decisions

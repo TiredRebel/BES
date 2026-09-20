@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br1-en
 title: "BR1: CompletedAt is set iff status is Completed"
-type: rule
+type: BusinessRule
+description: Business rule BR1 - CompletedAt timestamp is recorded strictly if and only if status is Completed
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[br4-final-statuses]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br1, validation, database-check]
+related: ["spec.en.md", "task-item.en.md", "br4-final-statuses.en.md"]
 ---
 
 # BR1: `CompletedAt` is required when, and only when, status = `Completed`

@@ -74,15 +74,20 @@ codegraph sync .                              # refresh the code graph index aft
 
 Solution layout and the exact file list per node: `.wiki/domain/spec.md` §1.
 
-## Code graph
+## Knowledge & Code Graph (OKF + CodeGraph)
 
-This repo's code graph tool is **CodeGraph** (`@colbymchenry/codegraph` 1.6.0, CLI `codegraph`). It replaces any
-user-level graphify instructions here. The index lives in `.codegraph/` (machine-local, gitignored by its own
-`.gitignore`); rebuild it with `codegraph init -y` on a fresh clone. The MCP server (`codegraph serve --mcp`) is wired
-project-scoped in `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor) and `.codex/config.toml` (Codex, trusted
-projects only). For symbol questions, use `codegraph query <name>`, `codegraph callers <symbol>`,
-`codegraph impact <symbol>` or the `codegraph_explore` MCP tool. After each fan-in, the code map summary in
-`.wiki/codemap.md` is regenerated from CodeGraph.
+This repository unifies **Open Knowledge Format (OKF v0.2)** and **CodeGraph** to provide a fast, deterministic decision-making system for agents:
+
+1. **OKF Knowledge Bundle (`.wiki/`):**
+   - The primary entry point for agent decisions is the **OKF Retrieval Map** in `.wiki/index.md` (English: `.wiki/index.en.md`).
+   - All knowledge concepts use typed YAML frontmatter (`okf_version: "0.2"`, `type`, `id`, `title`, `description`, `tags`, `related`).
+   - When deciding on domain invariants, database constraints, or use case contracts, agents read the corresponding OKF concepts directly instead of guessing or performing wide scans.
+2. **CodeGraph AST Grounding (`codegraph`):**
+   - CodeGraph (`@colbymchenry/codegraph` 1.6.0, CLI `codegraph`) powers the deterministic syntax graph (Roslyn AST).
+   - The index lives in `.codegraph/` (machine-local, gitignored). Rebuild with `codegraph init -y` on a fresh clone.
+   - The MCP server (`codegraph serve --mcp`) is wired project-scoped in `.mcp.json`, `.cursor/mcp.json`, and `.codex/config.toml`.
+   - For symbol-level inquiries, use `codegraph query <name>`, `codegraph callers <symbol>`, `codegraph impact <symbol>`, or the `codegraph_explore` MCP tool.
+   - After each fan-in or code change, run `codegraph sync .` to update the index and materialize changes into the OKF code map concept in `.wiki/codemap.md`.
 
 ## Workflow
 

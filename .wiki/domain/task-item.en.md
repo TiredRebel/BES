@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: entity-task-item-en
 title: TaskItem (entity) and TaskItemStatus (enum)
-type: entity
+type: Entity
+description: Domain entity of a task item, status lifecycle, creator/assignee associations, and optimistic concurrency
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[employee]]", "[[br1-completed-at]]", "[[br2-due-not-before-start]]", "[[br3-inactive-assignee]]", "[[br4-final-statuses]]", "[[br5-no-self-assignment]]"]
+updated: 2026-09-20
+tags: [okf, domain, entity, task-item, status-machine, xmin]
+related: ["spec.en.md", "employee.en.md", "br1-completed-at.en.md", "br2-due-not-before-start.en.md", "br3-inactive-assignee.en.md", "br4-final-statuses.en.md", "br5-no-self-assignment.en.md"]
 ---
 
 # TaskItem

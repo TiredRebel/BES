@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: domain-spec-en
 title: Data model and contracts (N1 spec)
-type: spec
+type: Spec
+description: Complete data model specification, contracts, business rules BR1-BR5, and use cases for the Task Management data layer
 status: approved
-updated: 2026-09-18
-related: ["[[employee]]", "[[task-item]]", "[[br1-completed-at]]", "[[br2-due-not-before-start]]", "[[br3-inactive-assignee]]", "[[br4-final-statuses]]", "[[br5-no-self-assignment]]", "[[decisions/index]]", "[[index]]"]
+updated: 2026-09-20
+tags: [okf, spec, domain, contracts, efcore, postgresql]
+related: ["employee.en.md", "task-item.en.md", "br1-completed-at.en.md", "br2-due-not-before-start.en.md", "br3-inactive-assignee.en.md", "br4-final-statuses.en.md", "br5-no-self-assignment.en.md", "../decisions/index.en.md", "../index.en.md"]
 ---
 
 # Task Management data layer: spec

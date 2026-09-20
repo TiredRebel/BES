@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br3
 title: "BR3: неактивному співробітнику не можна призначити нове завдання"
-type: rule
+type: BusinessRule
+description: Бізнес-правило BR3 - заборона призначення нових завдань неактивним співробітникам із захистом через тригер БД
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[employee]]", "[[task-item]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br3, validation, trigger, race-condition]
+related: ["spec.md", "employee.md", "task-item.md"]
 ---
 
 # BR3: неактивному співробітнику не можна призначити нове завдання

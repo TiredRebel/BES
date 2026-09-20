@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br5-en
 title: "BR5: a task can't be assigned to its creator"
-type: rule
+type: BusinessRule
+description: Business rule BR5 - task assignee cannot be the same person as creator (assignee != creator)
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[employee]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br5, validation, database-check]
+related: ["spec.en.md", "task-item.en.md", "employee.en.md"]
 ---
 
 # BR5: a task can't be assigned to its creator (assignee ≠ creator)

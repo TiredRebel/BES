@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: session-log
 title: Session and commit log
-type: log
+type: Log
+description: Журнал сесій та комітів проєкту Task Management
 status: active
-updated: 2026-09-18
-related: ["[[index]]"]
+updated: 2026-09-20
+tags: [okf, log, history, commits]
+related: ["index.md"]
 ---
 
 # Log

@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: adr-index
 title: Архітектурні рішення (ADR)
-type: decision-index
+type: Index
+description: Реєстр та індекс архітектурних рішень (ADR 0001-0009) рівня даних Task Management
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[index]]"]
+updated: 2026-09-20
+tags: [okf, adr, architecture-decisions, index]
+related: ["../domain/spec.md", "../index.md"]
 ---
 
 # Архітектурні рішення (Architecture decisions)

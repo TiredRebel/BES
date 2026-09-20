@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br2
 title: "BR2: DueAt не може бути раніше за PlannedStartAt"
-type: rule
+type: BusinessRule
+description: Бізнес-правило BR2 - дедлайн завдання DueAt не може передувати запланованому початку PlannedStartAt
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br2, validation, database-check]
+related: ["spec.md", "task-item.md"]
 ---
 
 # BR2: `DueAt` не може бути раніше за `PlannedStartAt`

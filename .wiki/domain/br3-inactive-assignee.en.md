@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br3-en
 title: "BR3: an inactive employee can't be given a new task"
-type: rule
+type: BusinessRule
+description: Business rule BR3 - inactive employees cannot be assigned new tasks, enforced via domain and DB trigger
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[employee]]", "[[task-item]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br3, validation, trigger, race-condition]
+related: ["spec.en.md", "employee.en.md", "task-item.en.md"]
 ---
 
 # BR3: an inactive employee can't be given a new task

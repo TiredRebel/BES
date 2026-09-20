@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: entity-task-item
 title: TaskItem (сутність) та TaskItemStatus (перелік)
-type: entity
+type: Entity
+description: Доменна сутність завдання (TaskItem), життєвий цикл статусів, зв'язки з автором і виконавцем, оптимістичне блокування
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[employee]]", "[[br1-completed-at]]", "[[br2-due-not-before-start]]", "[[br3-inactive-assignee]]", "[[br4-final-statuses]]", "[[br5-no-self-assignment]]"]
+updated: 2026-09-20
+tags: [okf, domain, entity, task-item, status-machine, xmin]
+related: ["spec.md", "employee.md", "br1-completed-at.md", "br2-due-not-before-start.md", "br3-inactive-assignee.md", "br4-final-statuses.md", "br5-no-self-assignment.md"]
 ---
 
 # Завдання (TaskItem)

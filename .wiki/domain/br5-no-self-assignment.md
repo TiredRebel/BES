@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br5
 title: "BR5: завдання не може бути призначене своєму автору"
-type: rule
+type: BusinessRule
+description: Бізнес-правило BR5 - виконавець завдання не може збігатися з автором (assignee != creator)
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[employee]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br5, validation, database-check]
+related: ["spec.md", "task-item.md", "employee.md"]
 ---
 
 # BR5: завдання не може бути призначене своєму автору (виконавець ≠ автор)

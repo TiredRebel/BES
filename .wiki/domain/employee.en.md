@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: entity-employee-en
 title: Employee (entity)
-type: entity
+type: Entity
+description: Domain entity of an employee, validation rules, lifecycle, and relationship constraints
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[br3-inactive-assignee]]", "[[br5-no-self-assignment]]"]
+updated: 2026-09-20
+tags: [okf, domain, entity, employee, crm]
+related: ["spec.en.md", "task-item.en.md", "br3-inactive-assignee.en.md", "br5-no-self-assignment.en.md"]
 ---
 
 # Employee

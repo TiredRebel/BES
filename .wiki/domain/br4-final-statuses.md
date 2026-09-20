@@ -1,9 +1,13 @@
 ---
+okf_version: "0.2"
+id: rule-br4
 title: "BR4: Completed та Cancelled є фінальними"
-type: rule
+type: BusinessRule
+description: Бізнес-правило BR4 - незмінність фінальних статусів Completed та Cancelled, захищена доменом та тригером БД
 status: approved
-updated: 2026-09-18
-related: ["[[spec]]", "[[task-item]]", "[[br1-completed-at]]"]
+updated: 2026-09-20
+tags: [okf, domain, business-rule, br4, state-machine, trigger, immutability]
+related: ["spec.md", "task-item.md", "br1-completed-at.md"]
 ---
 
 # BR4: `Completed` та `Cancelled` є фінальними

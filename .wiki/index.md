@@ -1,18 +1,36 @@
 ---
-title: База знань (Wiki index)
-type: index
+okf_version: "0.2"
+id: task-management-knowledge-index
+title: База знань (OKF Index)
+type: Index
+description: Компактна семантична пам'ять та карта прийняття рішень для AI-агентів у форматі Open Knowledge Format (OKF v0.2)
 status: active
-updated: 2026-09-19
-related: ["[[log]]", "[[codemap]]", "[[spec]]", "[[decisions/index]]"]
+updated: 2026-09-20
+tags: [okf, knowledge-bundle, crm, data-layer, dotnet, postgresql]
+related: ["codemap.md", "domain/spec.md", "decisions/index.md", "log.md"]
 ---
 
-# Рівень даних Task Management: База знань (Wiki index)
+# Рівень даних Task Management: База знань (OKF Index)
 
 [ **Українська** ] · [ English ](index.en.md)
 
-**Task Management** — це внутрішній CRM-модуль для призначення, виконання та контролю завдань співробітників. Цей репозиторій є його рівнем даних (PostgreSQL + EF Core).
+**Task Management** - це внутрішній CRM-модуль для призначення, виконання та контролю завдань співробітників. Цей репозиторій є його рівнем даних (PostgreSQL + EF Core).
 
-Читайте цю сторінку першою під час будь-якої сесії. Інструкції для агентів знаходяться в `AGENTS.md`; ця вікі містить стан проєкту та накопичені знання. Формат — чистий Markdown із YAML frontmatter та `[[вікі-посиланнями]]`, сумісний з Obsidian.
+Цей каталог є офіційним **Open Knowledge Format (OKF v0.2)** бандлом знань проєкту. Він слугує компактною семантичною пам'яттю для автономних AI-агентів (Claude Code, Antigravity, Codex, Cursor, AWS Bedrock) та розробників. Інструкції для агентів знаходяться в `AGENTS.md`. Формат - чистий Markdown із типізованим YAML frontmatter та відносними посиланнями, повністю сумісний із переглядачами OKF Reader / OKF Workbench та Obsidian.
+
+## Матриця пошуку та прийняття рішень (OKF Retrieval Map)
+
+Для швидкого прийняття рішень без зайвого пошуку агенти звертаються безпосередньо до відповідних OKF-концептів:
+
+| Потреба / Задача агента | Рекомендований документ для читання |
+|---|---|
+| **Швидкий старт / Відновлення контексту** | Найновіший чекпоінт у [checkpoints/](checkpoints/) та останні записи в [log.md](log.md) |
+| **Синтаксичний граф коду, AST та залежності** | [codemap.md](codemap.md) (матеріалізований граф CodeGraph) |
+| **Повна специфікація моделі даних та контрактів** | [domain/spec.md](domain/spec.md) (специфікація N1) |
+| **Сутності домену** | [domain/employee.md](domain/employee.md), [domain/task-item.md](domain/task-item.md) |
+| **Бізнес-правила (BR1-BR5)** | [BR1](domain/br1-completed-at.md), [BR2](domain/br2-due-not-before-start.md), [BR3](domain/br3-inactive-assignee.md), [BR4](domain/br4-final-statuses.md), [BR5](domain/br5-no-self-assignment.md) |
+| **Архітектурні рішення (ADR)** | [decisions/index.md](decisions/index.md) (ADR 0001-0009) |
+| **Граф виконання завдань (DAG)** | [plan/graph.yaml](plan/graph.yaml) |
 
 ## Поточний стан (оновлено 2026-09-19)
 
