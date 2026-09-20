@@ -96,16 +96,16 @@
 
 #### Загальна високорівнева архітектура системи (High-Level System Context)
 
-[![Загальна високорівнева архітектура системи](docs/diagrams/system-context.visual-check.1440x900.light.png)](docs/diagrams/system-context.html)
+[![Загальна високорівнева архітектура системи](docs/diagrams/system-context.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/system-context.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (система, зв'язки, теми Dark/Light)](docs/diagrams/system-context.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (система, зв'язки, теми Dark/Light)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/system-context.html)**  
 > *Специфікація:* [`docs/diagrams/system-context.json`](docs/diagrams/system-context.json)
 
 #### Модель сутностей та зв'язків (Domain Model)
 
-[![Модель сутностей та зв'язків](docs/diagrams/domain-model.visual-check.1440x900.light.png)](docs/diagrams/domain-model.html)
+[![Модель сутностей та зв'язків](docs/diagrams/domain-model.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/domain-model.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (доменні сутності, інваріанти BR1-BR5)](docs/diagrams/domain-model.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (доменні сутності, інваріанти BR1-BR5)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/domain-model.html)**  
 > *Специфікація:* [`docs/diagrams/domain-model.json`](docs/diagrams/domain-model.json)
 
 ### 1.2. Деконструкція бізнес-правил (BR1-BR5)
@@ -125,9 +125,9 @@
 
 #### Кінцевий автомат життєвого циклу завдання (State Machine)
 
-[![Кінцевий автомат життєвого циклу завдання](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](docs/diagrams/task-lifecycle.html)
+[![Кінцевий автомат життєвого циклу завдання](docs/diagrams/task-lifecycle.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/task-lifecycle.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (FSM стани, переходи та правила BR1/BR4)](docs/diagrams/task-lifecycle.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (FSM стани, переходи та правила BR1/BR4)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/task-lifecycle.html)**  
 > *Специфікація:* [`docs/diagrams/task-lifecycle.json`](docs/diagrams/task-lifecycle.json)
 
 ### 1.3. Моделювання демо-даних (Seed Data) та роль неактивного співробітника
@@ -187,9 +187,9 @@
 
 #### Карта архітектурних шарів та залежностей
 
-[![Карта архітектурних шарів та залежностей](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](docs/diagrams/solution-architecture.html)
+[![Карта архітектурних шарів та залежностей](docs/diagrams/solution-architecture.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/solution-architecture.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (5 проєктів, залежності, тестові контури)](docs/diagrams/solution-architecture.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (5 проєктів, залежності, тестові контури)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/solution-architecture.html)**  
 > *Специфікація:* [`docs/diagrams/solution-architecture.json`](docs/diagrams/solution-architecture.json)
 
 ### 2.3. Концепція «Глибинного захисту» (Defense in Depth)
@@ -204,9 +204,9 @@
 
 #### Пайплайн дворівневого захисту даних (Defense in Depth)
 
-[![Пайплайн дворівневого захисту даних](docs/diagrams/defense-in-depth.visual-check.1440x900.light.png)](docs/diagrams/defense-in-depth.html)
+[![Пайплайн дворівневого захисту даних](docs/diagrams/defense-in-depth.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/defense-in-depth.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (C# Fail-Fast, PostgreSQL 17 інваріанти, OCC)](docs/diagrams/defense-in-depth.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (C# Fail-Fast, PostgreSQL 17 інваріанти, OCC)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/defense-in-depth.html)**  
 > *Специфікація:* [`docs/diagrams/defense-in-depth.json`](docs/diagrams/defense-in-depth.json)
 
 ### 2.4. Стратегія конкурентності та блокувань (OCC через xmin)
@@ -249,9 +249,9 @@
    - **Інтеграційні цикли (Shift-Left):** 45 тестів на реальному PostgreSQL 17 через Testcontainers перевіряють констрейнти та тригери за лічені секунди.
    - **Аудит та ретроспектива:** Результати виконання фіксуються в Audit Evidence ([Розділ 4.7](#47-результати-перевірки-audit-evidence)), а відкриті питання та нові гіпотези (наприклад, розширення тригера BR3) формують беклог наступних ітерацій у `.wiki/index.md`.
 
-[![Agile Ітерація та інженерні фази](docs/diagrams/agile-iteration.visual-check.1440x900.light.png)](docs/diagrams/agile-iteration.html)
+[![Agile Ітерація та інженерні фази](docs/diagrams/agile-iteration.visual-check.1440x900.light.png)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/agile-iteration.html)
 
-> 🔍 **[Відкрити інтерактивну діаграму Archify (Agile фази, TDD, worktrees, аудит)](docs/diagrams/agile-iteration.html)**  
+> 🔍 **[Відкрити інтерактивну діаграму Archify (Agile фази, TDD, worktrees, аудит)](https://raw.githack.com/TiredRebel/BES/main/docs/diagrams/agile-iteration.html)**  
 > *Специфікація:* [`docs/diagrams/agile-iteration.json`](docs/diagrams/agile-iteration.json)
 
 ### 2.6. Життєвий цикл даних: Hot/Cold Data, архівування та часткові індекси

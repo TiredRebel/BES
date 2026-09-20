@@ -413,5 +413,6 @@ Newest entry at the bottom.
   - Generated standalone interactive HTML diagrams (`*.html`) with SVG rendering, zoom/pan controls, and dark/light mode toggles.
   - Performed automated Playwright browser quality audit (`visual-check`) across 1440×900, 1600×1000, 1920×1080, and 2048×1320 viewports in both light and dark themes (all 9/9 checks passed, 0 errors, 0 warnings).
   - Replaced all Mermaid diagram blocks in `README.md`, `README.uk.md`, and `README.en.md` with high-resolution visual previews linking to the interactive HTML diagrams and referencing the JSON specifications.
+  - Updated interactive HTML diagram links to use `https://raw.githack.com/` for direct, frictionless browser execution and rendering from GitHub.
 - CodeGraph synced via `codegraph sync .`.
 
