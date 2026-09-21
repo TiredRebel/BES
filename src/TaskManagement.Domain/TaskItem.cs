@@ -36,8 +36,7 @@ public sealed class TaskItem
     /// <summary>Gets the identifier of the employee who created the task. Never changes.</summary>
     public Guid CreatorId { get; private set; }
 
-    /// <summary>Gets the identifier of the employee the task is assigned to. Never changes.</summary>
-    /// <remarks>Enforces BR5: set from <see cref="Employee.Id"/> of an assignee distinct from the creator.</remarks>
+    /// <summary>Assigned employee ID.</summary>
     public Guid AssigneeId { get; private set; }
 
     /// <summary>Gets the planned start date and time, in UTC, or null if not planned.</summary>
@@ -155,5 +154,42 @@ public sealed class TaskItem
 
         Status = newStatus;
         CompletedAt = newStatus == TaskItemStatus.Completed ? changedAt.ToUniversalTime() : null;
+    }
+
+    /// <summary>
+    /// Reassigns the task to another active employee.
+    /// </summary>
+    public void Reassign(Employee newAssignee)
+    {
+        if (newAssignee is null)
+        {
+            throw new ArgumentNullException(nameof(newAssignee), "New assignee cannot be null.");
+        }
+
+        if (Status == TaskItemStatus.Completed || Status == TaskItemStatus.Cancelled)
+        {
+            throw new BusinessRuleViolationException(
+                "BR4",
+                $"BR4: Cannot reassign task {Id} because it is {Status}.");
+        }
+
+        if (newAssignee.Id == CreatorId)
+        {
+            throw new BusinessRuleViolationException("BR5", "BR5: Cannot assign task to its creator.");
+        }
+
+        if (!newAssignee.IsActive)
+        {
+            throw new BusinessRuleViolationException(
+                "BR3",
+                $"BR3: Cannot assign task to inactive employee {newAssignee.Id}.");
+        }
+
+        if (newAssignee.Id == AssigneeId)
+        {
+            return;
+        }
+
+        AssigneeId = newAssignee.Id;
     }
 }

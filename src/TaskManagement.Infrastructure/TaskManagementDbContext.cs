@@ -28,6 +28,9 @@ public sealed class TaskManagementDbContext : DbContext
     /// <summary>Gets the tasks (table <c>tasks</c>).</summary>
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
 
+    /// <summary>Task change history.</summary>
+    public DbSet<TaskHistoryEntry> TaskHistory => Set<TaskHistoryEntry>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

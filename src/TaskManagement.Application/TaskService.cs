@@ -6,14 +6,14 @@ using TaskManagement.Infrastructure;
 namespace TaskManagement.Application;
 
 /// <summary>
-/// Implements the module's three use cases: assigning a task, moving it through its statuses, and listing what an
-/// employee has.
+/// Implements the module's use cases: assigning a task, moving it through its statuses, reassigning it, listing what an
+/// employee has, and viewing its change history.
 /// </summary>
 /// <remarks>
 /// No interface: there is one implementation and the integration tests exercise it against a real database, so
-/// there is no mocking need. When a save fails, <see cref="CreateTaskAsync"/> and <see cref="ChangeTaskStatusAsync"/>
-/// detach the task they added or changed, so a caller that keeps using the same context never has that failed change
-/// retried by a later save.
+/// there is no mocking need. When a save fails, <see cref="CreateTaskAsync"/>, <see cref="ChangeTaskStatusAsync(Guid, TaskItemStatus, Guid, CancellationToken)"/>
+/// and <see cref="ReassignTaskAsync"/> detach the entities they added or changed, so a caller that keeps using the same
+/// context never has that failed change retried by a later save.
 /// </remarks>
 /// <param name="dbContext">The database context the three use cases read and write through.</param>
 /// <param name="timeProvider">The clock that supplies <see cref="TaskItem.CompletedAt"/> when a task is completed.</param>
@@ -106,35 +106,54 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
     }
 
     /// <summary>
-    /// Moves a task to <paramref name="newStatus"/>.
+    /// Changes task status using current assignee as author.
     /// </summary>
-    /// <param name="taskId">The identifier of the task to change.</param>
-    /// <param name="newStatus">The status to move to.</param>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>The updated <see cref="TaskItem"/>.</returns>
-    /// <exception cref="KeyNotFoundException"><paramref name="taskId"/> does not match a task.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="newStatus"/> is not a defined <see cref="TaskItemStatus"/> member.</exception>
-    /// <exception cref="BusinessRuleViolationException">BR4: the task's current status is <see cref="TaskItemStatus.Completed"/> or <see cref="TaskItemStatus.Cancelled"/>, which are final.</exception>
-    /// <exception cref="DbUpdateConcurrencyException">
-    /// Another writer changed the task since it was read. The task is already detached when this reaches the caller,
-    /// so EF's usual recovery from the exception's entries (such as "client wins") saves nothing; resolve the
-    /// conflict by calling this method again, which reloads the current row.
-    /// </exception>
-    /// <exception cref="DbUpdateException">The database rejected the update for another reason.</exception>
-    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
-    /// <remarks>
-    /// Enforces BR1 and BR4 (both in <see cref="TaskItem.ChangeStatus"/>). If the save fails, the task is detached
-    /// from the context, so a retry on the same context reloads the current row instead of reusing the failed change.
-    /// </remarks>
-    public async Task<TaskItem> ChangeTaskStatusAsync(
+    public Task<TaskItem> ChangeTaskStatusAsync(
         Guid taskId,
         TaskItemStatus newStatus,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ChangeTaskStatusInternalAsync(taskId, newStatus, null, cancellationToken);
+
+    /// <summary>
+    /// Changes task status and saves change to history.
+    /// </summary>
+    public Task<TaskItem> ChangeTaskStatusAsync(
+        Guid taskId,
+        TaskItemStatus newStatus,
+        Guid changedById,
+        CancellationToken cancellationToken = default) =>
+        ChangeTaskStatusInternalAsync(taskId, newStatus, changedById, cancellationToken);
+
+    private async Task<TaskItem> ChangeTaskStatusInternalAsync(
+        Guid taskId,
+        TaskItemStatus newStatus,
+        Guid? changedById,
+        CancellationToken cancellationToken)
     {
         var task = await dbContext.Tasks.SingleOrDefaultAsync(t => t.Id == taskId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Task {taskId} was not found.");
+            ?? throw new KeyNotFoundException($"Task {taskId} not found.");
 
+        var actorId = changedById ?? task.AssigneeId;
+        if (changedById.HasValue && !await dbContext.Employees.AnyAsync(e => e.Id == actorId, cancellationToken))
+        {
+            throw new KeyNotFoundException($"Employee {actorId} not found.");
+        }
+
+        var oldStatus = task.Status;
         task.ChangeStatus(newStatus, timeProvider.GetUtcNow());
+
+        TaskHistoryEntry? history = null;
+        if (oldStatus != task.Status)
+        {
+            history = TaskHistoryEntry.Create(
+                task.Id,
+                actorId,
+                timeProvider.GetUtcNow(),
+                TaskChangeType.StatusChanged,
+                oldStatus.ToString(),
+                task.Status.ToString());
+            dbContext.TaskHistory.Add(history);
+        }
 
         var saved = false;
         try
@@ -148,10 +167,104 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
             {
                 // A task left in the Modified state would make a retry on this context start from the failed change.
                 dbContext.Entry(task).State = EntityState.Detached;
+                if (history is not null)
+                {
+                    dbContext.Entry(history).State = EntityState.Detached;
+                }
             }
         }
 
         return task;
+    }
+
+    /// <summary>
+    /// Reassigns task to a new employee and saves change to history.
+    /// </summary>
+    public async Task<TaskItem> ReassignTaskAsync(
+        Guid taskId,
+        Guid newAssigneeId,
+        Guid changedById,
+        CancellationToken cancellationToken = default)
+    {
+        var task = await dbContext.Tasks.SingleOrDefaultAsync(t => t.Id == taskId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Task {taskId} not found.");
+
+        if (!await dbContext.Employees.AnyAsync(e => e.Id == changedById, cancellationToken))
+        {
+            throw new KeyNotFoundException($"Employee {changedById} not found.");
+        }
+
+        var newAssignee = await dbContext.Employees.SingleOrDefaultAsync(e => e.Id == newAssigneeId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Employee {newAssigneeId} not found.");
+
+        var oldAssigneeId = task.AssigneeId;
+
+        task.Reassign(newAssignee);
+
+        TaskHistoryEntry? history = null;
+        if (oldAssigneeId != task.AssigneeId)
+        {
+            history = TaskHistoryEntry.Create(
+                task.Id,
+                changedById,
+                timeProvider.GetUtcNow(),
+                TaskChangeType.AssigneeChanged,
+                oldAssigneeId.ToString(),
+                task.AssigneeId.ToString());
+            dbContext.TaskHistory.Add(history);
+        }
+
+        var saved = false;
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            saved = true;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg
+            && pg.SqlState == PostgresErrorCodes.CheckViolation
+            && pg.ConstraintName == "trg_tasks_br3_assignee_active")
+        {
+            throw new BusinessRuleViolationException(
+                "BR3",
+                $"BR3: Cannot assign task to inactive employee {newAssigneeId}.",
+                ex);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg
+            && pg.SqlState == PostgresErrorCodes.CheckViolation
+            && pg.ConstraintName == "trg_tasks_br4_final_status")
+        {
+            throw new BusinessRuleViolationException(
+                "BR4",
+                $"BR4: Cannot reassign task {taskId} because it is {task.Status}.",
+                ex);
+        }
+        finally
+        {
+            if (!saved)
+            {
+                dbContext.Entry(task).State = EntityState.Detached;
+                if (history is not null)
+                {
+                    dbContext.Entry(history).State = EntityState.Detached;
+                }
+            }
+        }
+
+        return task;
+    }
+
+    /// <summary>
+    /// Gets task history ordered by date.
+    /// </summary>
+    public async Task<IReadOnlyList<TaskHistoryEntry>> GetTaskHistoryAsync(
+        Guid taskId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.TaskHistory
+            .AsNoTracking()
+            .Where(h => h.TaskId == taskId)
+            .OrderBy(h => h.ChangedAt)
+            .ToListAsync(cancellationToken);
     }
 
     /// <summary>
@@ -164,7 +277,7 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
     /// A <see cref="PagedResult{TaskItem}"/> containing the matching tasks for the requested page, ordered by
     /// <see cref="TaskItem.DueAt"/> then <see cref="TaskItem.Id"/> (tasks without a deadline come last), along with
     /// the <see cref="TaskCursor"/> for the next page if more tasks exist. The returned tasks are untracked; a
-    /// status change goes through <see cref="ChangeTaskStatusAsync"/>.
+    /// status change goes through <see cref="ChangeTaskStatusAsync(Guid, TaskItemStatus, Guid, CancellationToken)"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="query"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><see cref="TaskListQuery.Status"/> has a value that is not a defined <see cref="TaskItemStatus"/> member.</exception>
@@ -248,7 +361,7 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
     /// <returns>
     /// The assignee's tasks, ordered by <see cref="TaskItem.DueAt"/> then <see cref="TaskItem.Id"/>; tasks without a
     /// deadline come last. An unknown employee, or one without tasks, gets an empty list. The returned tasks are
-    /// untracked; a status change goes through <see cref="ChangeTaskStatusAsync"/>.
+    /// untracked; a status change goes through <see cref="ChangeTaskStatusAsync(Guid, TaskItemStatus, Guid, CancellationToken)"/>.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="status"/> has a value that is not a defined <see cref="TaskItemStatus"/> member.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>

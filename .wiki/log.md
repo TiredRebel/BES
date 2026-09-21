@@ -5,7 +5,7 @@ title: Session and commit log
 type: Log
 description: Журнал сесій та комітів проєкту Task Management
 status: active
-updated: 2026-09-20
+updated: 2026-09-21
 tags: [okf, log, history, commits]
 related: ["index.md"]
 ---
@@ -416,4 +416,19 @@ Newest entry at the bottom.
   - Configured GitHub Pages: created `docs/index.html` (interactive diagram portal) and `docs/.nojekyll` (bypassing Jekyll).
   - Updated all diagram links across `README.md`, `README.uk.md`, and `README.en.md` to official GitHub Pages URLs (`https://tiredrebel.github.io/BES/diagrams/`).
 - CodeGraph synced via `codegraph sync .`.
+
+## 2026-09-20 · Antigravity · session 4 · Senior .NET Code Review & Scaling Backlog
+
+- Analyzed specification file `Агентська навичка .NET Code-Review.md` and created the global agent skill `dotnet-code-review` in `~/.gemini/config/skills/dotnet-code-review/SKILL.md`.
+- Performed a deterministic, compiler-oriented code review of the TaskManagement codebase against .NET 10, C# 13, CLR invariants, and Roslyn standards.
+- Evaluated review findings:
+  - Rejected candidate finding `[EF-TRK-01]` (`.AsNoTracking()` in `CreateTaskAsync`) after architectural verification: it conflicts with the Unit of Work identity map pattern and would break concurrency/trigger race-condition tests.
+  - Added candidate finding `[EF-PRJ-02]` (composite / partial index for keyset pagination in `ListTasksAsync`) to the Scaling Phase Optimization Backlog in `.wiki/index.md` and `.wiki/index.en.md`.
+
+## 2026-09-21 · Antigravity · session 5 · Test Suite
+
+- Added unit tests in `tests/TaskManagement.UnitTests/TaskItemReassignTests.cs` (8 unit tests covering task reassignment, status transitions, creator checks, and active assignee rules).
+- Added integration tests in `tests/TaskManagement.IntegrationTests/TaskReassignmentAndHistoryTests.cs` (10 integration tests against PostgreSQL via Testcontainers).
+- Updated existing test reference in `tests/TaskManagement.IntegrationTests/TaskServiceTests.cs`.
+- Verification: `dotnet test` passed 119/119 tests (64 unit, 55 integration, 0 failures).
 

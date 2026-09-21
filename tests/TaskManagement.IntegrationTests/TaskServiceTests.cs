@@ -494,7 +494,7 @@ public sealed class TaskServiceTests : IAsyncLifetime
     /// against the current row. The failed change must not stay in the context: otherwise the retry would see its
     /// own unsaved <c>Completed</c> and be rejected with a false BR4.
     /// </summary>
-    /// <remarks>Verifies the failed-save cleanup in <see cref="TaskService.ChangeTaskStatusAsync"/> (D3 finding SF2).</remarks>
+    /// <remarks>Verifies the failed-save cleanup in <see cref="TaskService.ChangeTaskStatusAsync(Guid, TaskItemStatus, CancellationToken)"/> (D3 finding SF2).</remarks>
     [Fact]
     [Trait("Category", "Integration")]
     public async Task ChangeTaskStatusAsync_AfterConcurrencyConflict_RetryOnSameContextSucceeds()
