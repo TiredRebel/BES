@@ -1,15 +1,13 @@
+#pragma warning disable CS1591
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TaskManagement.Domain;
 
 namespace TaskManagement.Infrastructure.Configurations;
 
-/// <summary>
-/// EF Core configuration for task history.
-/// </summary>
 public sealed class TaskHistoryEntryConfiguration : IEntityTypeConfiguration<TaskHistoryEntry>
 {
-    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<TaskHistoryEntry> builder)
     {
         builder.ToTable("task_history");

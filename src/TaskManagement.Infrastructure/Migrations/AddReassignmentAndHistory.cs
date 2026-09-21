@@ -1,31 +1,14 @@
-// AddReassignmentAndHistory: schema changes
-//
-// Tables and columns
-//   task_history: id uuid NOT NULL, task_id uuid NOT NULL, changed_by_id uuid NOT NULL,
-//                 changed_at timestamptz NOT NULL, change_type character varying(20) NOT NULL,
-//                 old_value character varying(200) NOT NULL, new_value character varying(200) NOT NULL
-// Primary keys
-//   pk_task_history (task_history.id)
-// Foreign keys
-//   fk_task_history_tasks_task_id           task_history(task_id)       -> tasks(id) ON DELETE RESTRICT
-//   fk_task_history_employees_changed_by_id task_history(changed_by_id) -> employees(id) ON DELETE RESTRICT
-// Indexes
-//   IX_task_history_changed_by_id       task_history(changed_by_id)
-//   ix_task_history_task_id_changed_at  task_history(task_id, changed_at)
-// Trigger update (raw SQL in Up(), reverted in Down())
-//   function tasks_enforce_br3_br4() updated to check BR3 and BR4 on UPDATE OF assignee_id
-//   trigger trg_tasks_br3_br4 recreated with BEFORE INSERT OR UPDATE OF status, assignee_id ON tasks
+// AddReassignmentAndHistory: creates task_history table and updates trigger
 using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
+#pragma warning disable CS1591
 
 namespace TaskManagement.Infrastructure.Migrations
 {
-    /// <inheritdoc />
     public partial class AddReassignmentAndHistory : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -67,7 +50,7 @@ namespace TaskManagement.Infrastructure.Migrations
                 table: "task_history",
                 columns: new[] { "task_id", "changed_at" });
 
-            // Extend BR3 and BR4 enforcement to cover assignee_id updates (ADR 0009 / ADR 0010).
+            // Update trigger to check assignee on task reassignment.
             migrationBuilder.Sql("""
                 CREATE OR REPLACE FUNCTION tasks_enforce_br3_br4() RETURNS trigger
                 LANGUAGE plpgsql AS $$
@@ -75,8 +58,7 @@ namespace TaskManagement.Infrastructure.Migrations
                     assignee_active boolean;
                 BEGIN
                     IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.assignee_id IS DISTINCT FROM OLD.assignee_id) THEN
-                        -- BR3: the assignee must be active. FOR SHARE blocks a concurrent deactivation until this transaction ends.
-                        -- An unknown assignee leaves assignee_active NULL, so the FK reports it (23503), not BR3.
+                        -- Check that assignee is active
                         SELECT is_active INTO assignee_active FROM employees WHERE id = NEW.assignee_id FOR SHARE;
                         IF assignee_active IS FALSE THEN
                             RAISE EXCEPTION 'BR3: employee % is inactive and cannot be given a new task.', NEW.assignee_id
@@ -86,7 +68,7 @@ namespace TaskManagement.Infrastructure.Migrations
 
                     IF TG_OP = 'UPDATE' AND OLD.status IN ('Completed', 'Cancelled') THEN
                         IF NEW.status IS DISTINCT FROM OLD.status OR NEW.assignee_id IS DISTINCT FROM OLD.assignee_id THEN
-                            -- BR4: Completed and Cancelled are final.
+                            -- Completed and Cancelled tasks cannot be modified
                             RAISE EXCEPTION 'BR4: task % is %; Completed and Cancelled are final.', OLD.id, OLD.status
                                 USING ERRCODE = 'check_violation', CONSTRAINT = 'trg_tasks_br4_final_status';
                         END IF;
@@ -105,10 +87,9 @@ namespace TaskManagement.Infrastructure.Migrations
                 """);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Revert trigger and function to InitialCreate definition
+            // Revert trigger to original definition
             migrationBuilder.Sql("""
                 CREATE OR REPLACE FUNCTION tasks_enforce_br3_br4() RETURNS trigger
                 LANGUAGE plpgsql AS $$

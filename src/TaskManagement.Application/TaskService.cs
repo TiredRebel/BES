@@ -145,7 +145,7 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
         TaskHistoryEntry? history = null;
         if (oldStatus != task.Status)
         {
-            history = TaskHistoryEntry.Create(
+            history = new TaskHistoryEntry(
                 task.Id,
                 actorId,
                 timeProvider.GetUtcNow(),
@@ -204,7 +204,7 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
         TaskHistoryEntry? history = null;
         if (oldAssigneeId != task.AssigneeId)
         {
-            history = TaskHistoryEntry.Create(
+            history = new TaskHistoryEntry(
                 task.Id,
                 changedById,
                 timeProvider.GetUtcNow(),

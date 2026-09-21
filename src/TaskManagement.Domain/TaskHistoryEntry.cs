@@ -1,11 +1,9 @@
+#pragma warning disable CS1591
+
 namespace TaskManagement.Domain;
 
-/// <summary>
-/// History record for task changes.
-/// </summary>
 public sealed class TaskHistoryEntry
 {
-    /// <summary>Max length for values.</summary>
     public const int ValueMaxLength = 200;
 
     private TaskHistoryEntry()
@@ -14,31 +12,7 @@ public sealed class TaskHistoryEntry
         NewValue = string.Empty;
     }
 
-    /// <summary>Record ID.</summary>
-    public Guid Id { get; private set; }
-
-    /// <summary>Task ID.</summary>
-    public Guid TaskId { get; private set; }
-
-    /// <summary>ID of employee who made the change.</summary>
-    public Guid ChangedById { get; private set; }
-
-    /// <summary>Date and time of change (UTC).</summary>
-    public DateTimeOffset ChangedAt { get; private set; }
-
-    /// <summary>Type of change.</summary>
-    public TaskChangeType ChangeType { get; private set; }
-
-    /// <summary>Old value.</summary>
-    public string OldValue { get; private set; }
-
-    /// <summary>New value.</summary>
-    public string NewValue { get; private set; }
-
-    /// <summary>
-    /// Creates a new history record.
-    /// </summary>
-    public static TaskHistoryEntry Create(
+    public TaskHistoryEntry(
         Guid taskId,
         Guid changedById,
         DateTimeOffset changedAt,
@@ -46,50 +20,52 @@ public sealed class TaskHistoryEntry
         string oldValue,
         string newValue)
     {
-        if (taskId == Guid.Empty)
-        {
-            throw new ArgumentException("Task ID cannot be empty.", nameof(taskId));
-        }
-
-        if (changedById == Guid.Empty)
-        {
-            throw new ArgumentException("Employee ID cannot be empty.", nameof(changedById));
-        }
+        ValidateId(taskId, nameof(taskId), "Task ID cannot be empty.");
+        ValidateId(changedById, nameof(changedById), "Employee ID cannot be empty.");
 
         if (!Enum.IsDefined(changeType))
         {
             throw new ArgumentOutOfRangeException(nameof(changeType), changeType, "Invalid change type.");
         }
 
-        if (oldValue is null)
+        ValidateValue(oldValue, nameof(oldValue), "Old value");
+        ValidateValue(newValue, nameof(newValue), "New value");
+
+        Id = Guid.CreateVersion7();
+        TaskId = taskId;
+        ChangedById = changedById;
+        ChangedAt = changedAt.ToUniversalTime();
+        ChangeType = changeType;
+        OldValue = oldValue;
+        NewValue = newValue;
+    }
+
+    public Guid Id { get; private set; }
+    public Guid TaskId { get; private set; }
+    public Guid ChangedById { get; private set; }
+    public DateTimeOffset ChangedAt { get; private set; }
+    public TaskChangeType ChangeType { get; private set; }
+    public string OldValue { get; private set; }
+    public string NewValue { get; private set; }
+
+    private static void ValidateId(Guid id, string paramName, string message)
+    {
+        if (id == Guid.Empty)
         {
-            throw new ArgumentNullException(nameof(oldValue), "Old value cannot be null.");
+            throw new ArgumentException(message, paramName);
+        }
+    }
+
+    private static void ValidateValue(string value, string paramName, string fieldName)
+    {
+        if (value is null)
+        {
+            throw new ArgumentNullException(paramName, $"{fieldName} cannot be null.");
         }
 
-        if (newValue is null)
+        if (value.Length > ValueMaxLength)
         {
-            throw new ArgumentNullException(nameof(newValue), "New value cannot be null.");
+            throw new ArgumentException($"{fieldName} cannot be longer than {ValueMaxLength} characters.", paramName);
         }
-
-        if (oldValue.Length > ValueMaxLength)
-        {
-            throw new ArgumentException($"Old value cannot be longer than {ValueMaxLength} characters.", nameof(oldValue));
-        }
-
-        if (newValue.Length > ValueMaxLength)
-        {
-            throw new ArgumentException($"New value cannot be longer than {ValueMaxLength} characters.", nameof(newValue));
-        }
-
-        return new TaskHistoryEntry
-        {
-            Id = Guid.CreateVersion7(),
-            TaskId = taskId,
-            ChangedById = changedById,
-            ChangedAt = changedAt.ToUniversalTime(),
-            ChangeType = changeType,
-            OldValue = oldValue,
-            NewValue = newValue,
-        };
     }
 }
