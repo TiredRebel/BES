@@ -215,4 +215,37 @@ public sealed class TaskReassignmentAndHistoryTests : IAsyncLifetime
         var updated = await service.ChangeTaskStatusAsync(Task1Id, TaskItemStatus.InProgress, AliceId);
         Assert.Equal(TaskItemStatus.InProgress, updated.Status);
     }
+
+    /// <summary>
+    /// When DB trigger trg_tasks_br4_final_status rejects status change, service translates it to BR4 exception
+    /// and detaches entities.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ChangeTaskStatusAsync_TriggerBR4Rejection_ThrowsBR4ExceptionAndDetachesEntities()
+    {
+        // Load Task1 (New) into change tracker
+        var task = await _dbContext!.Tasks.SingleAsync(t => t.Id == Task1Id);
+
+        // Concurrently complete the task in database behind the context's back
+        await _dbContext.Database.ExecuteSqlAsync(
+            $"UPDATE tasks SET status = 'Completed', completed_at = now() WHERE id = {Task1Id}");
+
+        // Align original xmin so the UPDATE matches the row and hits the trigger rather than OCC conflict
+        var xminStr = await _dbContext.Database.SqlQuery<string>($"SELECT xmin::text AS \"Value\" FROM tasks WHERE id = {Task1Id}").SingleAsync();
+        var currentXmin = uint.Parse(xminStr, System.Globalization.CultureInfo.InvariantCulture);
+        _dbContext.Entry(task).Property(t => t.Version).OriginalValue = currentXmin;
+
+        var service = new TaskService(_dbContext, _timeProvider);
+
+        var rejection = await Assert.ThrowsAsync<BusinessRuleViolationException>(
+            () => service.ChangeTaskStatusAsync(Task1Id, TaskItemStatus.InProgress, AliceId));
+
+        Assert.Equal("BR4", rejection.RuleId);
+        Assert.IsType<DbUpdateException>(rejection.InnerException);
+
+        // Verify task and history are detached on failure
+        Assert.Equal(EntityState.Detached, _dbContext.Entry(task).State);
+    }
 }
+

@@ -432,3 +432,17 @@ Newest entry at the bottom.
 - Updated existing test reference in `tests/TaskManagement.IntegrationTests/TaskServiceTests.cs`.
 - Verification: `dotnet test` passed 119/119 tests (64 unit, 55 integration, 0 failures).
 
+## 2026-09-22 · Antigravity · session 6 · Revised task reassignment & history audit trail
+
+- Revised `TaskService.cs`:
+  - Added catch for database trigger `trg_tasks_br4_final_status` in `ChangeTaskStatusInternalAsync`, translating `DbUpdateException` to `BusinessRuleViolationException("BR4", ...)` symmetrically with `ReassignTaskAsync`.
+  - Added entity detachment (`EntityState.Detached`) on save failures for `task` and `history` in `finally` blocks to prevent dirty context state during retries.
+- Added integration test in `TaskReassignmentAndHistoryTests.cs`:
+  - `ChangeTaskStatusAsync_TriggerBR4Rejection_ThrowsBR4ExceptionAndDetachesEntities`: verifies concurrent status change hitting `trg_tasks_br4_final_status` is translated to `BusinessRuleViolationException("BR4", ...)` and detaches entities.
+- Updated `README.md`:
+  - Documented default actor rationale (`changedById ?? task.AssigneeId`) as backward compatibility compromise.
+  - Documented that `CreateTaskAsync` does not record in `TaskHistory` (history begins from the first modification).
+  - Clarified error contract symmetry and dirty state protection across service methods.
+  - Updated test count to 120 (64 unit, 56 integration).
+- Verification: `dotnet build -warnaserror` (0 warnings, 0 errors), `dotnet test` (120/120 passed).
+

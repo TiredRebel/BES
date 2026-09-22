@@ -161,6 +161,15 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
             await dbContext.SaveChangesAsync(cancellationToken);
             saved = true;
         }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg
+            && pg.SqlState == PostgresErrorCodes.CheckViolation
+            && pg.ConstraintName == "trg_tasks_br4_final_status")
+        {
+            throw new BusinessRuleViolationException(
+                "BR4",
+                $"BR4: Task {taskId} is {task.Status}; Completed and Cancelled are final.",
+                ex);
+        }
         finally
         {
             if (!saved)
