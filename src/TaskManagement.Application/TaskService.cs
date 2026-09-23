@@ -263,8 +263,17 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
     }
 
     /// <summary>
-    /// Gets task history ordered by date.
+    /// Gets the task's audit history, oldest first.
     /// </summary>
+    /// <param name="taskId">The identifier of the task whose history is read.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>
+    /// The task's history entries ordered by <see cref="TaskHistoryEntry.ChangedAt"/> then
+    /// <see cref="TaskHistoryEntry.Id"/>. The id tie-break keeps the order deterministic when several entries share a
+    /// timestamp; ids are UUIDv7, so it is also chronological. Without it PostgreSQL may return tied rows in any
+    /// order, and does reorder them after an update.
+    /// </returns>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public async Task<IReadOnlyList<TaskHistoryEntry>> GetTaskHistoryAsync(
         Guid taskId,
         CancellationToken cancellationToken = default)
@@ -273,6 +282,7 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
             .AsNoTracking()
             .Where(h => h.TaskId == taskId)
             .OrderBy(h => h.ChangedAt)
+            .ThenBy(h => h.Id)
             .ToListAsync(cancellationToken);
     }
 
@@ -362,28 +372,34 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
     }
 
     /// <summary>
-    /// Lists the tasks assigned to an employee, most-imminent deadline first.
+    /// Lists one page of the tasks assigned to an employee, most-imminent deadline first.
     /// </summary>
     /// <param name="assigneeId">The identifier of the assignee.</param>
     /// <param name="status">When set, restricts the result to tasks in this status.</param>
+    /// <param name="pageSize">The maximum number of tasks on the page, clamped to 1..100.</param>
+    /// <param name="cursor">When set, continues after this cursor; pass <see cref="PagedResult{T}.NextCursor"/> of the previous page.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>
-    /// The assignee's tasks, ordered by <see cref="TaskItem.DueAt"/> then <see cref="TaskItem.Id"/>; tasks without a
-    /// deadline come last. An unknown employee, or one without tasks, gets an empty list. The returned tasks are
-    /// untracked; a status change goes through <see cref="ChangeTaskStatusAsync(Guid, TaskItemStatus, Guid, CancellationToken)"/>.
+    /// One page of the assignee's tasks, ordered by <see cref="TaskItem.DueAt"/> then <see cref="TaskItem.Id"/>;
+    /// tasks without a deadline come last. An unknown employee, or one without tasks, gets an empty page.
+    /// <see cref="PagedResult{T}.NextCursor"/> is non-null when more tasks match, so a caller that needs all of them
+    /// keeps calling with it: an assignee with more tasks than <paramref name="pageSize"/> is never silently cut off.
+    /// The returned tasks are untracked; a status change goes through <see cref="ChangeTaskStatusAsync(Guid, TaskItemStatus, Guid, CancellationToken)"/>.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="status"/> has a value that is not a defined <see cref="TaskItemStatus"/> member.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     /// <remarks>
     /// Convenience overload delegating to <see cref="ListTasksAsync(TaskListQuery, CancellationToken)"/>.
     /// </remarks>
-    public async Task<IReadOnlyList<TaskItem>> ListTasksByAssigneeAsync(
+    public async Task<PagedResult<TaskItem>> ListTasksByAssigneeAsync(
         Guid assigneeId,
         TaskItemStatus? status = null,
+        int pageSize = TaskListQuery.DefaultPageSize,
+        TaskCursor? cursor = null,
         CancellationToken cancellationToken = default)
     {
         return status.HasValue && !Enum.IsDefined(status.Value)
             ? throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown task status.")
-            : await ListTasksAsync(new TaskListQuery(assigneeId, status), cancellationToken);
+            : await ListTasksAsync(new TaskListQuery(assigneeId, status, PageSize: pageSize, Cursor: cursor), cancellationToken);
     }
 }

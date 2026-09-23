@@ -365,6 +365,7 @@ default-named index). Resolved at B1: the generated `Up()` has no `IX_` index, a
 | `pk_tasks` | tasks | PK | `(id)` | identity |
 | `ux_employees_email` | employees | unique index | `(email)` | unique e-mail (case-insensitive via lowercase normalisation, [ADR 0005](../../docs/adr/0005-email-uniqueness-lowercase.md)) |
 | `ix_tasks_assignee_id_status` | tasks | index | `(assignee_id, status)` | brief: assignee + status; serves "list by assignee" via its leading column |
+| `ix_tasks_assignee_id_due_at_id` | tasks | index | `(assignee_id, due_at, id)` | keyset listing: the assignee filter together with the `due_at, id` order (without it every page sorted the assignee's whole task set) |
 | `ix_tasks_due_at` | tasks | index | `(due_at)` | brief: due date |
 | `ix_tasks_creator_id` | tasks | index | `(creator_id)` | FK lookups for `ON DELETE RESTRICT` (EF would create it anyway; named here so it is not `IX_…`) |
 | `fk_tasks_employees_creator_id` | tasks | FK | `(creator_id) → employees(id) ON DELETE RESTRICT` | referential integrity |

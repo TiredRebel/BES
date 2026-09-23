@@ -237,6 +237,37 @@ public sealed class TaskServiceTests : IAsyncLifetime
         Assert.Equal(BobsTaskIdsOrderedByDueAt, tasks.Select(t => t.Id));
     }
 
+    /// <summary>
+    /// Verifies that an assignee with more tasks than one page is never silently cut off: the first page is full,
+    /// carries a cursor, and following that cursor yields every remaining task exactly once.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ListTasksByAssigneeAsync_MoreTasksThanOnePage_ReturnsCursorAndNoTaskIsLost()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+        for (var i = 0; i < 12; i++)
+        {
+            await service.CreateTaskAsync($"bulk {i}", AliceId, BobId, null, new DateTimeOffset(2026, 12, 1, 9, 0, 0, TimeSpan.Zero).AddDays(i + 1));
+        }
+
+        var expected = await _dbContext!.Tasks.AsNoTracking().CountAsync(t => t.AssigneeId == BobId);
+        var seen = new List<Guid>();
+        var page = await service.ListTasksByAssigneeAsync(BobId, pageSize: 5);
+        seen.AddRange(page.Items.Select(t => t.Id));
+        Assert.Equal(5, page.Items.Count);
+        Assert.NotNull(page.NextCursor);
+
+        while (page.NextCursor is not null)
+        {
+            page = await service.ListTasksByAssigneeAsync(BobId, pageSize: 5, cursor: page.NextCursor);
+            seen.AddRange(page.Items.Select(t => t.Id));
+        }
+
+        Assert.Equal(expected, seen.Count);
+        Assert.Equal(expected, seen.Distinct().Count());
+    }
+
     /// <summary>Verifies that an assignee with no tasks returns an empty list, not an exception.</summary>
     [Fact]
     [Trait("Category", "Integration")]

@@ -65,6 +65,7 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.HasOne<Employee>().WithMany().HasForeignKey(t => t.AssigneeId).OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_tasks_employees_assignee_id");
 
         builder.HasIndex(t => new { t.AssigneeId, t.Status }).HasDatabaseName("ix_tasks_assignee_id_status");
+        builder.HasIndex(t => new { t.AssigneeId, t.DueAt, t.Id }).HasDatabaseName("ix_tasks_assignee_id_due_at_id");
         builder.HasIndex(t => t.DueAt).HasDatabaseName("ix_tasks_due_at");
         builder.HasIndex(t => t.CreatorId).HasDatabaseName("ix_tasks_creator_id");
 

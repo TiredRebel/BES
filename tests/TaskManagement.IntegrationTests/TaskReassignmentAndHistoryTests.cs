@@ -43,6 +43,38 @@ public sealed class TaskReassignmentAndHistoryTests : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// Verifies that history entries sharing a <c>changed_at</c> (the fixed test clock gives every entry the same
+    /// timestamp) come back in a deterministic order after several rows are rewritten by updates. Ordering by
+    /// <c>changed_at</c> alone lets PostgreSQL return tied rows in whatever order the scan produces.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task GetTaskHistoryAsync_EntriesSharingTimestamp_KeepStableOrderAfterRowRewrites()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+        for (var i = 0; i < 3; i++)
+        {
+            await service.ChangeTaskStatusAsync(Task1Id, TaskItemStatus.InProgress, AliceId);
+            await service.ChangeTaskStatusAsync(Task1Id, TaskItemStatus.New, AliceId);
+        }
+
+        var expected = (await service.GetTaskHistoryAsync(Task1Id)).Select(h => h.Id).ToList();
+        Assert.Equal(6, expected.Count);
+        Assert.Equal(expected.OrderBy(id => id).ToList(), expected);
+
+        // Rewriting rows moves them to the end of the heap, so a scan no longer returns insertion order.
+        await _dbContext!.Database.ExecuteSqlRawAsync(
+            "UPDATE task_history SET old_value = old_value WHERE id IN (SELECT id FROM task_history ORDER BY id LIMIT 3)");
+        // Drop the covering index (in this test's own database), so this asserts the query's own ordering guarantee
+        // rather than the order the index happens to return.
+        await _dbContext.Database.ExecuteSqlRawAsync("DROP INDEX ix_task_history_task_id_changed_at_id");
+
+        var actual = (await service.GetTaskHistoryAsync(Task1Id)).Select(h => h.Id).ToList();
+
+        Assert.Equal(expected, actual);
+    }
+
     /// <summary>Reassigning updates assignee_id and writes an audit record.</summary>
     [Fact]
     [Trait("Category", "Integration")]

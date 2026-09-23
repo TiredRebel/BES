@@ -1,4 +1,10 @@
-// AddReassignmentAndHistory: creates task_history table and updates trigger
+// 20260919000000_AddReassignmentAndHistory: creates the task_history table and widens the BR3/BR4 trigger to
+// reassignment (UPDATE OF status, assignee_id).
+//
+// The id was originally "AddReassignmentAndHistory", without a timestamp. EF applies migrations in id order,
+// so any later timestamped migration sorted BEFORE it and would have run before task_history existed on a fresh
+// database. A database that already recorded the old id must have its __EFMigrationsHistory row renamed to this
+// id, or EF will try to apply this migration again.
 using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 

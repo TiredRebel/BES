@@ -446,3 +446,37 @@ Newest entry at the bottom.
   - Updated test count to 120 (64 unit, 56 integration).
 - Verification: `dotnet build -warnaserror` (0 warnings, 0 errors), `dotnet test` (120/120 passed).
 
+
+## 2026-09-23 · orch (claude-opus-5) + Codex (adversarial review) · stability review fixes
+
+- Stability review of HEAD `9955b8c`: adversarial pass by Codex (12 findings, job `task-muecv6rp-3espcs`) plus orch's
+  own pass; every claim re-verified by orch before it was accepted. Baseline before the work: 120/120 tests green.
+- Fixed the four confirmed issues, test-first:
+  1. **Silent truncation.** `ListTasksByAssigneeAsync` delegated to the paged query, kept the default page size and
+     dropped the cursor, so it returned an `IReadOnlyList` that looked complete. Probe: 62 tasks in the database,
+     50 returned, no error. It now returns `PagedResult<TaskItem>` and takes `pageSize`/`cursor`. New test
+     `ListTasksByAssigneeAsync_MoreTasksThanOnePage_ReturnsCursorAndNoTaskIsLost`.
+  2. **Migration id without a timestamp.** EF applies migrations in id order, so `AddReassignmentAndHistory` sorted
+     after every timestamped id: `dotnet ef migrations add` produced `20260923170739_ProbeNextMigration`, which EF
+     listed *before* it — on a fresh database a later migration would run before `task_history` exists. Renamed to
+     `20260919000000_AddReassignmentAndHistory` (id, both files, header note). New guard test
+     `AllMigrations_HaveTimestampedIdsInOrder`.
+  3. **Unstable history order.** `GetTaskHistoryAsync` ordered only by `ChangedAt`, and the fixed test clock gives
+     every entry the same timestamp. Probe on a plain table: after one `UPDATE`, order came back `second,third,first`.
+     Added `.ThenBy(h => h.Id)` (UUIDv7, so also chronological) and widened the index to
+     `ix_task_history_task_id_changed_at_id`. New test `GetTaskHistoryAsync_EntriesSharingTimestamp_KeepStableOrderAfterRowRewrites`.
+  4. **No index for the keyset listing.** Added `ix_tasks_assignee_id_due_at_id` (assignee_id, due_at, id) in
+     migration `20260923172949_AddListingAndHistoryIndexes`. Measured on the migrated schema with 200k tasks:
+     `Index Scan using ix_tasks_assignee_id_due_at_id`, 0.075 ms / 54 buffers, against 2.29 ms / 10,201 buffers
+     (Incremental Sort over `ix_tasks_due_at`) before.
+- Red evidence (each fix undone, its test run, file restored byte-for-byte): page size ignored → the paging test red;
+  id without timestamp → the migration test red; index not created → the schema test red; `.ThenBy(h => h.Id)`
+  removed → the history test red (that test drops the covering index in its own database first, otherwise the index
+  masks the missing tie-break — the first two versions of the test passed without the fix and were rewritten).
+- Gates: `dotnet build -warnaserror` 0/0; `dotnet test` 123/123 (64 unit, 59 integration); `codegraph sync .` 33 files.
+- **Deploy note:** a database that already recorded the old `AddReassignmentAndHistory` id must have that row in
+  `__EFMigrationsHistory` renamed to `20260919000000_AddReassignmentAndHistory`, or EF will try to apply it again.
+- Not fixed (reported, awaiting a decision): the stale no-op — a same-status or same-assignee request issues no
+  UPDATE, so `xmin` is never checked and the caller gets "success" with stale data (probe: returned `New`, stored
+  `InProgress`). Also open: unbounded history reads, `Down()` dropping `task_history`, no idempotency key,
+  the BR4 message naming the new status, and the three `#pragma warning disable CS1591` suppressions.

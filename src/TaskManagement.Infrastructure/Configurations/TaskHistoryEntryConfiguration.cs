@@ -24,6 +24,6 @@ public sealed class TaskHistoryEntryConfiguration : IEntityTypeConfiguration<Tas
         builder.HasOne<TaskItem>().WithMany().HasForeignKey(h => h.TaskId).OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_task_history_tasks_task_id");
         builder.HasOne<Employee>().WithMany().HasForeignKey(h => h.ChangedById).OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_task_history_employees_changed_by_id");
 
-        builder.HasIndex(h => new { h.TaskId, h.ChangedAt }).HasDatabaseName("ix_task_history_task_id_changed_at");
+        builder.HasIndex(h => new { h.TaskId, h.ChangedAt, h.Id }).HasDatabaseName("ix_task_history_task_id_changed_at_id");
     }
 }

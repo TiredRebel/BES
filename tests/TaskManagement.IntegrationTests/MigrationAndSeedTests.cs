@@ -28,8 +28,10 @@ public sealed class MigrationAndSeedTests : IAsyncLifetime
     [
         "ux_employees_email",
         "ix_tasks_assignee_id_status",
+        "ix_tasks_assignee_id_due_at_id",
         "ix_tasks_due_at",
         "ix_tasks_creator_id",
+        "ix_task_history_task_id_changed_at_id",
     ];
 
     private static readonly string[] ExpectedTriggerNames = ["trg_tasks_br3_br4"];
@@ -86,7 +88,7 @@ public sealed class MigrationAndSeedTests : IAsyncLifetime
                 "SELECT conname AS \"Value\" FROM pg_constraint WHERE conrelid IN ('employees'::regclass, 'tasks'::regclass)")
             .ToListAsync();
         var indexNames = await _dbContext.Database
-            .SqlQueryRaw<string>("SELECT indexname AS \"Value\" FROM pg_indexes WHERE tablename IN ('employees', 'tasks')")
+            .SqlQueryRaw<string>("SELECT indexname AS \"Value\" FROM pg_indexes WHERE tablename IN ('employees', 'tasks', 'task_history')")
             .ToListAsync();
         var triggerNames = await _dbContext.Database
             .SqlQueryRaw<string>(
@@ -104,6 +106,22 @@ public sealed class MigrationAndSeedTests : IAsyncLifetime
         }
 
         Assert.Equal(ExpectedTriggerNames, triggerNames);
+    }
+
+    /// <summary>
+    /// Verifies that every migration id starts with a 14-digit timestamp and that the ids are already in order. EF
+    /// applies migrations in id order, so an id without a timestamp (for example <c>AddReassignmentAndHistory</c>)
+    /// sorts after every timestamped id, and a later migration would be applied before it on a fresh database.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public void AllMigrations_HaveTimestampedIdsInOrder()
+    {
+        var migrations = _dbContext!.Database.GetMigrations().ToList();
+
+        Assert.NotEmpty(migrations);
+        Assert.All(migrations, id => Assert.Matches(@"^\d{14}_", id));
+        Assert.Equal(migrations.OrderBy(id => id, StringComparer.Ordinal).ToList(), migrations);
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ Task Management is the internal CRM module for assigning, executing and controll
 |---|---|---|
 | Assigning: a creator gives a task to an employee | `CreateTaskAsync` | domain creation guards, application service; enforces BR2, BR3, BR5 |
 | Executing: the task moves through its statuses | `ChangeTaskStatusAsync` | domain status transition logic; enforces BR1, BR4 |
-| Controlling: what does an employee have, in which status, due when | `ListTasksAsync` (`TaskListQuery`: keyset pagination with `TaskCursor`/`PagedResult`, status, creator, due date filters; compatible `ListTasksByAssigneeAsync`), ordered by deadline | application service query; uses `ix_tasks_assignee_id_status` index |
+| Controlling: what does an employee have, in which status, due when | `ListTasksAsync` (`TaskListQuery`: keyset pagination with `TaskCursor`/`PagedResult`, status, creator, due date filters; `ListTasksByAssigneeAsync` returns one page plus its cursor), ordered by deadline | application service query; uses the `ix_tasks_assignee_id_due_at_id` index |
 
 ## High-level system context
 

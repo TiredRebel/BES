@@ -214,6 +214,7 @@ ADR: [0006](../../docs/adr/0006-utc-normalisation-and-explicit-time.md).
 | `pk_tasks` | tasks | PK | `(id)` | первинний ключ |
 | `ux_employees_email` | employees | Unique index | `(email)` | унікальність e-mail |
 | `ix_tasks_assignee_id_status` | tasks | Index | `(assignee_id, status)` | пошук за виконавцем та статусом |
+| `ix_tasks_assignee_id_due_at_id` | tasks | Index | `(assignee_id, due_at, id)` | keyset-лістинг: фільтр за виконавцем разом із сортуванням `due_at, id` (без нього кожна сторінка сортувала всі завдання виконавця) |
 | `ix_tasks_due_at` | tasks | Index | `(due_at)` | сортування та пошук за дедлайном |
 | `ix_tasks_creator_id` | tasks | Index | `(creator_id)` | оптимізація FK автора |
 | `fk_tasks_employees_creator_id` | tasks | FK | `(creator_id) → employees(id) ON DELETE RESTRICT` | зв'язок з автором |
@@ -319,8 +320,9 @@ public sealed class TaskService
         TaskListQuery query,
         CancellationToken cancellationToken = default);
 
-    public Task<IReadOnlyList<TaskItem>> ListTasksByAssigneeAsync(
+    public Task<PagedResult<TaskItem>> ListTasksByAssigneeAsync(
         Guid assigneeId, TaskItemStatus? status = null,
+        int pageSize = TaskListQuery.DefaultPageSize, TaskCursor? cursor = null,
         CancellationToken cancellationToken = default);
 }
 ```
@@ -328,7 +330,8 @@ public sealed class TaskService
 - **`CreateTaskAsync`**: перевіряє існування авторів, активність виконавця (BR3), валідує в домені, зберігає в БД; помилку тригера `trg_tasks_br3_assignee_active` транслює в `BusinessRuleViolationException("BR3", ..., inner)`.
 - **`ChangeTaskStatusAsync`**: завантажує завдання, викликає `task.ChangeStatus(newStatus, timeProvider.GetUtcNow())`, зберігає зміни. При конфлікті викидає `DbUpdateConcurrencyException`.
 - **`ListTasksAsync`**: виконує `AsNoTracking()` запит за `query.AssigneeId`, обмежує розмір сторінки `Math.Clamp(query.PageSize, 1, 100)`, застосовує keyset-фільтр за курсором `(DueAt, Id)` та опціональні фільтри (`Status`, `CreatorId`, `DueFrom`, `DueTo`), впорядковує за `DueAt` (nulls last) та `Id`, повертає сторінку `PagedResult<TaskItem>` з курсором `NextCursor`.
-- **`ListTasksByAssigneeAsync`**: сумісна обгортка, яка делегує виклик у `ListTasksAsync(new TaskListQuery(assigneeId, status), cancellationToken)`.
+- **`ListTasksByAssigneeAsync`**: обгортка, яка делегує виклик у `ListTasksAsync(new TaskListQuery(assigneeId, status, PageSize: pageSize, Cursor: cursor), cancellationToken)` і повертає `PagedResult<TaskItem>`. Повертає одну сторінку та `NextCursor`: викликач, якому потрібні всі завдання, продовжує з цим курсором. Раніше метод повертав `IReadOnlyList` і мовчки віддавав лише перші 50 завдань.
+- **`GetTaskHistoryAsync`**: впорядковує історію за `ChangedAt`, далі за `Id`. Тай-брейк за `Id` (UUIDv7) робить порядок детермінованим, коли кілька записів мають однаковий час.
 
 ---
 
