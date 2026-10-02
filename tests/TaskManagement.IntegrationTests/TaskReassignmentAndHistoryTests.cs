@@ -75,6 +75,64 @@ public sealed class TaskReassignmentAndHistoryTests : IAsyncLifetime
         Assert.Equal(expected, actual);
     }
 
+    /// <summary>
+    /// Verifies that a status request which looks like a no-op against a stale tracked copy is still carried out.
+    /// The context reads the task as <c>New</c>, another context commits <c>InProgress</c>, and the request for
+    /// <c>New</c> must reach the database instead of returning stale success without issuing an UPDATE.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ChangeTaskStatusAsync_StaleCopyMakesRequestLookLikeNoOp_StillAppliesChange()
+    {
+        var service = new TaskService(_dbContext!, _timeProvider);
+        await _dbContext!.Tasks.SingleAsync(t => t.Id == Task1Id);            // this context now tracks it as New
+        await using (var other = PostgresFixture.CreateContext(_connectionString))
+        {
+            await new TaskService(other, _timeProvider).ChangeTaskStatusAsync(Task1Id, TaskItemStatus.InProgress, AliceId);
+        }
+
+        var returned = await service.ChangeTaskStatusAsync(Task1Id, TaskItemStatus.New, AliceId);
+
+        await using var read = PostgresFixture.CreateContext(_connectionString);
+        var stored = await read.Tasks.AsNoTracking().SingleAsync(t => t.Id == Task1Id);
+        Assert.Equal(TaskItemStatus.New, stored.Status);
+        Assert.Equal(TaskItemStatus.New, returned.Status);
+        var history = await service.GetTaskHistoryAsync(Task1Id);
+        Assert.Equal(2, history.Count);
+        Assert.Equal("InProgress", history[^1].OldValue);
+        Assert.Equal("New", history[^1].NewValue);
+    }
+
+    /// <summary>
+    /// Verifies the same for reassignment: the context reads the task as assigned to Bohdan, another context moves
+    /// it to David, and a request to assign it to Bohdan must reach the database rather than returning stale success.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task ReassignTaskAsync_StaleCopyMakesRequestLookLikeNoOp_StillAppliesChange()
+    {
+        var davidId = Guid.Parse("10000000-0000-0000-0000-000000000005");
+        await _dbContext!.Database.ExecuteSqlAsync(
+            $"INSERT INTO employees (id, full_name, email, is_active) VALUES ({davidId}, 'Давид Коваль', 'david.koval@example.com', true)");
+        var service = new TaskService(_dbContext, _timeProvider);
+        await _dbContext.Tasks.SingleAsync(t => t.Id == Task1Id);             // tracked as assigned to Bohdan
+        await using (var other = PostgresFixture.CreateContext(_connectionString))
+        {
+            await new TaskService(other, _timeProvider).ReassignTaskAsync(Task1Id, davidId, AliceId);
+        }
+
+        var returned = await service.ReassignTaskAsync(Task1Id, BobId, AliceId);
+
+        await using var read = PostgresFixture.CreateContext(_connectionString);
+        var stored = await read.Tasks.AsNoTracking().SingleAsync(t => t.Id == Task1Id);
+        Assert.Equal(BobId, stored.AssigneeId);
+        Assert.Equal(BobId, returned.AssigneeId);
+        var history = await service.GetTaskHistoryAsync(Task1Id);
+        Assert.Equal(2, history.Count);
+        Assert.Equal(davidId.ToString(), history[^1].OldValue);
+        Assert.Equal(BobId.ToString(), history[^1].NewValue);
+    }
+
     /// <summary>Reassigning updates assignee_id and writes an audit record.</summary>
     [Fact]
     [Trait("Category", "Integration")]

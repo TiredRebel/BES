@@ -480,3 +480,23 @@ Newest entry at the bottom.
   UPDATE, so `xmin` is never checked and the caller gets "success" with stale data (probe: returned `New`, stored
   `InProgress`). Also open: unbounded history reads, `Down()` dropping `task_history`, no idempotency key,
   the BR4 message naming the new status, and the three `#pragma warning disable CS1591` suppressions.
+
+## 2026-09-23 · orch (claude-opus-5) · stale no-op fix (review finding STAB-02)
+
+- Previous commit: stability fixes = `a3dd259`.
+- Problem: a request matching the copy the context already held (same status, or the assignee it already had) made
+  the domain return early, so `SaveChangesAsync` wrote nothing, the `xmin` token was never compared, and the caller
+  got "success" plus stale data. Measured before the fix: the service returned `New` while the row held `InProgress`,
+  with no exception.
+- Fix: on that path only, `Entry(task).ReloadAsync(cancellationToken)` refreshes the copy before the code decides it
+  is a no-op; a row that no longer exists raises `KeyNotFoundException`. The existing logic then does the right
+  thing: it applies the change if the stored state differs, throws BR4 if the row became final, and still writes
+  nothing when the stored state genuinely matches. One extra SELECT, only for requests that look like no-ops.
+- Tests (red before the fix, green after): `ChangeTaskStatusAsync_StaleCopyMakesRequestLookLikeNoOp_StillAppliesChange`
+  (stored `InProgress` where `New` was expected) and `ReassignTaskAsync_StaleCopyMakesRequestLookLikeNoOp_StillAppliesChange`
+  (stored David where Bohdan was expected). Removing either reload turns its test red; the genuine no-op tests
+  (`ChangeTaskStatusAsync_SameStatus_DoesNotRecordHistory`, `ReassignTaskAsync_SameAssignee_DoesNotRecordHistory`)
+  stay green, so a real no-op still writes no history.
+- Gates: `dotnet build -warnaserror` 0/0; `dotnet test` 125/125 (64 unit, 61 integration).
+- Still open from the review: unbounded history reads, `Down()` dropping `task_history`, no idempotency key for an
+  ambiguous commit, the BR4 message naming the new status, and the three `#pragma warning disable CS1591`.

@@ -117,6 +117,20 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
     /// <summary>
     /// Changes task status and saves change to history.
     /// </summary>
+    /// <param name="taskId">The identifier of the task to change.</param>
+    /// <param name="newStatus">The status to move to.</param>
+    /// <param name="changedById">The identifier of the employee recorded as the author of the change.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The updated <see cref="TaskItem"/>, reflecting the stored row.</returns>
+    /// <exception cref="KeyNotFoundException">The task, or <paramref name="changedById"/>, was not found.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="newStatus"/> is not a defined <see cref="TaskItemStatus"/> member.</exception>
+    /// <exception cref="BusinessRuleViolationException">BR4: the stored status is <see cref="TaskItemStatus.Completed"/> or <see cref="TaskItemStatus.Cancelled"/>.</exception>
+    /// <exception cref="DbUpdateConcurrencyException">Another writer changed the task since it was read.</exception>
+    /// <remarks>
+    /// When the request matches the status this context already holds, the task is reloaded first: without that, a
+    /// stale copy would make the call write nothing, skip the concurrency check, and report success for a status the
+    /// database no longer has.
+    /// </remarks>
     public Task<TaskItem> ChangeTaskStatusAsync(
         Guid taskId,
         TaskItemStatus newStatus,
@@ -137,6 +151,17 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
         if (changedById.HasValue && !await dbContext.Employees.AnyAsync(e => e.Id == actorId, cancellationToken))
         {
             throw new KeyNotFoundException($"Employee {actorId} not found.");
+        }
+
+        if (task.Status == newStatus)
+        {
+            // The request looks like a no-op, but this context's copy may be stale: a no-op issues no UPDATE, so the
+            // xmin token is never checked and the caller would get a stale "success". Reload before deciding.
+            await dbContext.Entry(task).ReloadAsync(cancellationToken);
+            if (dbContext.Entry(task).State == EntityState.Detached)
+            {
+                throw new KeyNotFoundException($"Task {taskId} not found.");
+            }
         }
 
         var oldStatus = task.Status;
@@ -189,6 +214,18 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
     /// <summary>
     /// Reassigns task to a new employee and saves change to history.
     /// </summary>
+    /// <param name="taskId">The identifier of the task to reassign.</param>
+    /// <param name="newAssigneeId">The identifier of the employee the task moves to.</param>
+    /// <param name="changedById">The identifier of the employee recorded as the author of the change.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The updated <see cref="TaskItem"/>, reflecting the stored row.</returns>
+    /// <exception cref="KeyNotFoundException">The task, <paramref name="newAssigneeId"/> or <paramref name="changedById"/> was not found.</exception>
+    /// <exception cref="BusinessRuleViolationException">BR3: the new assignee is inactive. BR4: the task is final. BR5: the new assignee created the task.</exception>
+    /// <exception cref="DbUpdateConcurrencyException">Another writer changed the task since it was read.</exception>
+    /// <remarks>
+    /// When the request names the assignee this context already holds, the task is reloaded first, for the same
+    /// reason as in <see cref="ChangeTaskStatusAsync(Guid, TaskItemStatus, Guid, CancellationToken)"/>.
+    /// </remarks>
     public async Task<TaskItem> ReassignTaskAsync(
         Guid taskId,
         Guid newAssigneeId,
@@ -205,6 +242,17 @@ public sealed class TaskService(TaskManagementDbContext dbContext, TimeProvider 
 
         var newAssignee = await dbContext.Employees.SingleOrDefaultAsync(e => e.Id == newAssigneeId, cancellationToken)
             ?? throw new KeyNotFoundException($"Employee {newAssigneeId} not found.");
+
+        if (task.AssigneeId == newAssigneeId)
+        {
+            // Same reasoning as in ChangeTaskStatusAsync: a request that matches this context's copy would write
+            // nothing and check nothing, so refresh the copy before treating it as a no-op.
+            await dbContext.Entry(task).ReloadAsync(cancellationToken);
+            if (dbContext.Entry(task).State == EntityState.Detached)
+            {
+                throw new KeyNotFoundException($"Task {taskId} not found.");
+            }
+        }
 
         var oldAssigneeId = task.AssigneeId;
 
