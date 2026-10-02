@@ -500,3 +500,16 @@ Newest entry at the bottom.
 - Gates: `dotnet build -warnaserror` 0/0; `dotnet test` 125/125 (64 unit, 61 integration).
 - Still open from the review: unbounded history reads, `Down()` dropping `task_history`, no idempotency key for an
   ambiguous commit, the BR4 message naming the new status, and the three `#pragma warning disable CS1591`.
+
+## 2026-10-02 · orch (claude-opus-5-5) · WPF client, Phase 1: ADR 0010
+
+- Previous commit: `8b6d43d` (guidelines and the WPF client prompt). Phase 0 found nothing pending: the stale no-op
+  fix was already committed as `79b4c95`. Gates on that state: `dotnet build -warnaserror` 0/0; `dotnet test`
+  125/125 (64 unit, 61 integration), Docker 29.8.1.
+- Added `docs/adr/0010-wpf-client-and-mvvm.md` (accepted by the human at the Phase 1 gate): project
+  `src/TaskManagement.Wpf` (`net10.0-windows`, `UseWPF`), CommunityToolkit.Mvvm 8.4.2 and Microsoft.Extensions.Hosting
+  10.0.12, `IDbContextFactory` with one context per operation, an `ITaskClient` seam in the client (real, fake,
+  design-time), no BR logic in the UI, inline message bar, compose PostgreSQL on `127.0.0.1:5433` with trust auth.
+- Human decisions at the gate: no task description and no "all tasks" view (the data layer has neither; the assignee
+  filter is mandatory and defaults to the acting employee). Commits: the agent stages each phase, the human commits;
+  `.wiki/log.md` and the root `README.md` may be included this run; English subjects.
