@@ -1,0 +1,123 @@
+<Window x:Class="TaskManagement.Wpf.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:design="clr-namespace:TaskManagement.Wpf.DesignTime"
+        mc:Ignorable="d"
+        d:DataContext="{x:Static design:DesignData.Main}"
+        Title="Task Management" Width="1200" Height="700" MinWidth="900" MinHeight="500"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+    <DockPanel>
+        <!-- Toolbar -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
+            <Label Content="_Acting as" Target="{Binding ElementName=ActingCombo}" />
+            <ComboBox x:Name="ActingCombo" Width="220" Margin="0,0,16,0"
+                      ItemsSource="{Binding Employees}" DisplayMemberPath="DisplayName"
+                      SelectedItem="{Binding ActingEmployee}" IsEnabled="{Binding IsIdle}"
+                      AutomationProperties.Name="Acting as" />
+            <Button Content="_New task…" Command="{Binding CreateTaskCommand}" Padding="12,2" Margin="0,0,8,0" />
+            <Button Content="Re_fresh" Command="{Binding RefreshCommand}" Padding="12,2" />
+        </StackPanel>
+
+        <!-- Filters -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,0,8,8">
+            <Label Content="Assi_gnee" Target="{Binding ElementName=AssigneeFilterCombo}" />
+            <ComboBox x:Name="AssigneeFilterCombo" Width="220" Margin="0,0,16,0"
+                      ItemsSource="{Binding Employees}" DisplayMemberPath="DisplayName"
+                      SelectedItem="{Binding FilterAssignee}" IsEnabled="{Binding IsIdle}"
+                      AutomationProperties.Name="Assignee filter" />
+            <Label Content="_Status" Target="{Binding ElementName=StatusFilterCombo}" />
+            <ComboBox x:Name="StatusFilterCombo" Width="140"
+                      ItemsSource="{Binding StatusFilters}" DisplayMemberPath="Label"
+                      SelectedItem="{Binding SelectedStatusFilter}" IsEnabled="{Binding IsIdle}"
+                      AutomationProperties.Name="Status filter" />
+        </StackPanel>
+
+        <!-- Message bar -->
+        <Border DockPanel.Dock="Top" Margin="8,0,8,8" Padding="8"
+                Background="{x:Static SystemColors.InfoBrush}"
+                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="_Dismiss" Command="{Binding DismissErrorCommand}"
+                        Padding="12,2" Margin="8,0,0,0" VerticalAlignment="Top" />
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap"
+                           Foreground="{x:Static SystemColors.InfoTextBrush}" />
+            </DockPanel>
+        </Border>
+
+        <!-- Change status, reassign, history -->
+        <Grid DockPanel.Dock="Right" Width="380" Margin="0,0,8,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                <Label Content="_Change status to" Target="{Binding ElementName=NewStatusCombo}" Padding="0,0,0,4" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Apply" Command="{Binding ChangeStatusCommand}"
+                            Padding="12,2" Margin="8,0,0,0"
+                            AutomationProperties.Name="Apply status change" />
+                    <ComboBox x:Name="NewStatusCombo" ItemsSource="{Binding StatusOptions}"
+                              SelectedItem="{Binding NewStatus}" AutomationProperties.Name="New status" />
+                </DockPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                <Label Content="_Reassign to" Target="{Binding ElementName=NewAssigneeCombo}" Padding="0,0,0,4" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Apply" Command="{Binding ReassignCommand}"
+                            Padding="12,2" Margin="8,0,0,0"
+                            AutomationProperties.Name="Apply reassignment" />
+                    <ComboBox x:Name="NewAssigneeCombo" ItemsSource="{Binding Employees}"
+                              DisplayMemberPath="DisplayName" SelectedItem="{Binding NewAssignee}"
+                              AutomationProperties.Name="New assignee" />
+                </DockPanel>
+            </StackPanel>
+
+            <Label Grid.Row="2" Content="History" Padding="0,0,0,4" />
+            <DataGrid Grid.Row="3" ItemsSource="{Binding History}" AutoGenerateColumns="False"
+                      IsReadOnly="True" HeadersVisibility="Column" CanUserAddRows="False"
+                      AutomationProperties.Name="Task history">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Change" Binding="{Binding ChangeType}" />
+                    <DataGridTextColumn Header="Old value" Binding="{Binding OldValue}" />
+                    <DataGridTextColumn Header="New value" Binding="{Binding NewValue}" />
+                    <DataGridTextColumn Header="When" Binding="{Binding ChangedAt, StringFormat=g}" />
+                    <DataGridTextColumn Header="Author" Binding="{Binding AuthorName}" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!-- Pager -->
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="8">
+            <Button Content="◀ _Previous" Command="{Binding PreviousPageCommand}" Padding="12,2" />
+            <TextBlock Text="{Binding PageNumber, StringFormat='Page {0}'}" VerticalAlignment="Center" Margin="16,0" />
+            <Button Content="Ne_xt ▶" Command="{Binding NextPageCommand}" Padding="12,2" />
+        </StackPanel>
+
+        <!-- Task list -->
+        <DataGrid ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}"
+                  AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                  HeadersVisibility="Column" CanUserAddRows="False" Margin="8,0,8,0"
+                  AutomationProperties.Name="Tasks">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" MinWidth="160" />
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80" />
+                <DataGridTextColumn Header="Assignee" Binding="{Binding AssigneeName}" Width="140" />
+                <DataGridTextColumn Header="Planned start" Width="120"
+                                    Binding="{Binding PlannedStartAt, StringFormat=g, TargetNullValue=''}" />
+                <DataGridTextColumn Header="Due" Width="120"
+                                    Binding="{Binding DueAt, StringFormat=g, TargetNullValue=''}" />
+                <DataGridTextColumn Header="Completed" Width="120"
+                                    Binding="{Binding CompletedAt, StringFormat=g, TargetNullValue=''}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

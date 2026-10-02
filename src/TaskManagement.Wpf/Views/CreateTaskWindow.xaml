@@ -1,0 +1,64 @@
+<Window x:Class="TaskManagement.Wpf.Views.CreateTaskWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:design="clr-namespace:TaskManagement.Wpf.DesignTime"
+        mc:Ignorable="d"
+        d:DataContext="{x:Static design:DesignData.CreateTask}"
+        Title="New task" Width="440" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Content="_Title" Target="{Binding ElementName=TitleBox}" Margin="0,0,8,8" />
+        <TextBox x:Name="TitleBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"
+                 Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
+                 AutomationProperties.Name="Title" />
+
+        <Label Grid.Row="1" Content="_Creator" Target="{Binding ElementName=CreatorCombo}" Margin="0,0,8,8" />
+        <ComboBox x:Name="CreatorCombo" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"
+                  ItemsSource="{Binding Employees}" DisplayMemberPath="DisplayName"
+                  SelectedItem="{Binding Creator}" AutomationProperties.Name="Creator" />
+
+        <Label Grid.Row="2" Content="_Assignee" Target="{Binding ElementName=AssigneeCombo}" Margin="0,0,8,8" />
+        <ComboBox x:Name="AssigneeCombo" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"
+                  ItemsSource="{Binding Employees}" DisplayMemberPath="DisplayName"
+                  SelectedItem="{Binding Assignee}" AutomationProperties.Name="Assignee" />
+
+        <Label Grid.Row="3" Content="_Planned start" Target="{Binding ElementName=StartPicker}" Margin="0,0,8,8" />
+        <DatePicker x:Name="StartPicker" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8"
+                    SelectedDate="{Binding PlannedStartDate}" AutomationProperties.Name="Planned start" />
+
+        <Label Grid.Row="4" Content="_Due" Target="{Binding ElementName=DuePicker}" Margin="0,0,8,8" />
+        <DatePicker x:Name="DuePicker" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8"
+                    SelectedDate="{Binding DueDate}" AutomationProperties.Name="Due" />
+
+        <Border Grid.Row="5" Grid.ColumnSpan="2" Margin="0,0,0,8" Padding="8"
+                Background="{x:Static SystemColors.InfoBrush}"
+                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap"
+                       Foreground="{x:Static SystemColors.InfoTextBrush}" />
+        </Border>
+
+        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="_Save" Command="{Binding SaveCommand}" IsDefault="True" MinWidth="80" Margin="0,0,8,0" />
+            <Button Content="Cancel" IsCancel="True" MinWidth="80" />
+        </StackPanel>
+    </Grid>
+</Window>

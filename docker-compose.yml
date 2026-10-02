@@ -1,0 +1,16 @@
+# Local PostgreSQL for the WPF client (ADR 0010). No password: trust auth, reachable from this machine only.
+# Port 5433 so it does not collide with a PostgreSQL already listening on 5432.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: task_management
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - task_management_data:/var/lib/postgresql/data
+
+volumes:
+  task_management_data:

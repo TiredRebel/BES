@@ -513,3 +513,24 @@ Newest entry at the bottom.
 - Human decisions at the gate: no task description and no "all tasks" view (the data layer has neither; the assignee
   filter is mandatory and defaults to the acting employee). Commits: the agent stages each phase, the human commits;
   `.wiki/log.md` and the root `README.md` may be included this run; English subjects.
+
+## 2026-10-02 · orch (claude-opus-5-5) + sonnet worker · WPF client, Phase 2: `src/TaskManagement.Wpf`
+
+- Previous commit: `77bbc32` (ADR 0010).
+- New project `src/TaskManagement.Wpf` (`net10.0-windows`, `UseWPF`), added to `TaskManagement.slnx`. Packages:
+  CommunityToolkit.Mvvm 8.4.2, Microsoft.Extensions.Hosting 10.0.12. No change under Domain, Application,
+  Infrastructure or Migrations (`git diff --stat` empty for those paths).
+- Orchestrator wrote the contract: `App.xaml(.cs)` (host, DI, `AddDbContextFactory`, last-resort handler),
+  `Services/ITaskClient.cs`, `Services/TaskClient.cs` (one context per call, entities mapped to records before the
+  context is disposed), `Services/ViewData.cs`, `appsettings.json`, root `docker-compose.yml` (postgres:17-alpine,
+  trust auth, `127.0.0.1:5433`, because 5432 was taken on the dev machine).
+- Sonnet worker wrote `ViewModels/MainViewModel.cs`, `ViewModels/CreateTaskViewModel.cs`, `Services/IDialogService.cs`,
+  `Services/DialogService.cs`, `Views/MainWindow.xaml(.cs)`, `Views/CreateTaskWindow.xaml(.cs)`,
+  `DesignTime/DesignData.cs` against a written spec. Orchestrator review: catch order (concurrency before
+  `DbUpdateException`), no BR logic in `CanExecute`, 3-argument `ChangeTaskStatusAsync`; removed an unreachable
+  concurrency catch from the create dialog and gave the list's date columns fixed widths.
+- Runtime check: `docker compose up -d`, `dotnet ef database update --connection "...Port=5433..."` applied all
+  migrations, `dotnet run --project src/TaskManagement.Wpf` opened the window; the log shows the employee query, the
+  keyset page query and the assignee-name query; a screenshot showed the seeded tasks for one assignee and "Page 1".
+  Status change, reassign and the error bar were not exercised by the orchestrator through the UI.
+- Gates: `dotnet build -warnaserror` 0/0.
