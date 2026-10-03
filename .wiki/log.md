@@ -565,3 +565,12 @@ Newest entry at the bottom.
 - Previous commit: `db66a17` (WPF tests, docs, unreachable-database fix).
 - README.en.md and README.uk.md list Windows as a requirement: the WPF client and its tests target
   `net10.0-windows`, so the solution builds only on Windows. Human decision after the Phase 3 report.
+
+## 2026-10-03 · orch (claude-opus-5-5) · AGENTS.md: WPF client in scope
+
+- Previous commit: `43f5fb9` (README requirements: Windows).
+- AGENTS.md "What this repo is" now includes the WPF client (`src/TaskManagement.Wpf`, ADR 0010) and drops "UI" from
+  the out-of-scope list; WPF code follows `docs/guidelines/` and leaves BR1-BR5 to the service. Stack table gains
+  `net10.0-windows`, CommunityToolkit.Mvvm 8.4.2 and Microsoft.Extensions.Hosting 10.0.12 (already in use since
+  `689f94f`, so rule 6 no longer asks about them). Commands gain `docker compose up -d` and the client's `dotnet run`.
+  Human request.

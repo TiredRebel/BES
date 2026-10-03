@@ -9,10 +9,12 @@ the execution graph (`.wiki/plan/graph.yaml`, with each node's status) and the s
 ## What this repo is
 
 The data layer of **Task Management**, the internal CRM module for assigning, executing and controlling employees'
-tasks: PostgreSQL + EF Core.
+tasks: PostgreSQL + EF Core, plus a WPF desktop client over it.
 Covers employees, tasks, task assignment, deadlines and statuses, enforcing business rules BR1-BR5
-(defined in `.wiki/domain/`). Scope is backend/data only: domain, persistence, an application service, tests.
-A web API, UI or server host is out of scope.
+(defined in `.wiki/domain/`). Scope: domain, persistence, an application service, the WPF client
+(`src/TaskManagement.Wpf`, ADR 0010), tests. A web API or server host is out of scope.
+WPF client code follows `docs/guidelines/` (binding: coding standards, desktop design, MVVM, analyzers) and leaves
+BR1-BR5 to the service: the UI shows a violation, it never re-checks one.
 
 ## Hard rules
 
@@ -32,12 +34,14 @@ A web API, UI or server host is out of scope.
 
 | Item | Version |
 |---|---|
-| .NET SDK / TFM | 10.0.401 / `net10.0` (LTS) |
+| .NET SDK / TFM | 10.0.401 / `net10.0` (LTS); `net10.0-windows` for the WPF client and its tests |
 | Microsoft.EntityFrameworkCore, .Relational, .Design | 10.0.12 |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
 | dotnet-ef (global tool) | 10.0.12 |
 | xunit / xunit.runner.visualstudio / Microsoft.NET.Test.Sdk | 2.9.3 / 3.1.4 / 17.14.1 |
 | Testcontainers.PostgreSql | 4.15.0 |
+| CommunityToolkit.Mvvm (WPF client) | 8.4.2 |
+| Microsoft.Extensions.Hosting (WPF client; brings DependencyInjection and Configuration.Json) | 10.0.12 |
 | PostgreSQL image for tests | `postgres:17-alpine` |
 
 `Microsoft.EntityFrameworkCore.Relational` is referenced explicitly in Infrastructure (approved at N2): Npgsql 10.0.3
@@ -70,6 +74,8 @@ dotnet ef migrations add <Name> --project src/TaskManagement.Infrastructure
 dotnet ef migrations list --project src/TaskManagement.Infrastructure --no-connect
 dotnet ef database update --project src/TaskManagement.Infrastructure --connection "<connection string>"
 codegraph sync .                              # refresh the code graph index after code changes
+docker compose up -d                          # local PostgreSQL for the WPF client, 127.0.0.1:5433
+dotnet run --project src/TaskManagement.Wpf   # after `database update` against Port=5433
 ```
 
 Solution layout and the exact file list per node: `.wiki/domain/spec.md` §1.
