@@ -1,4 +1,17 @@
 # Task Management Data Layer
+### UPD 2: WPF-клієнт
+
+- **Нові проєкти:** `src/TaskManagement.Wpf` (WPF-клієнт, `net10.0-windows`), `tests/TaskManagement.Wpf.UnitTests` (view-model тести).
+- **MVVM архітектура:** CommunityToolkit.Mvvm 8.4.2 з `Microsoft.Extensions.Hosting` для DI. Один `DbContext` на операцію через `IDbContextFactory<TaskManagementDbContext>`. View-моделі пов'язані з незмінними записами, ніколи не з EF-сутностями.
+- **Бізнес-правила не дублюються:** BR1–BR5 забезпечуються рівнем сервісу та БД; UI показує порушення в смузі повідомлень.
+- **Тести:** 18 unit-тестів для view-моделей з фейками. Всього 143/143 тести: 64 доменні + 18 WPF + 61 інтеграційних.
+- **Запуск:**
+  ```bash
+  docker compose up -d
+  dotnet ef database update --project src/TaskManagement.Infrastructure --connection "Host=localhost;Port=5433;Database=task_management;Username=postgres"
+  dotnet run --project src/TaskManagement.Wpf
+  ```
+
 ### UPD: Додаткове завдання: зміна виконавця + історія змін
 
 #### Доменний рівень

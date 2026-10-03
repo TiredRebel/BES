@@ -292,7 +292,7 @@ public sealed partial class MainViewModel : ObservableObject
                 }
             }
         }
-        catch (DbException)
+        catch (Exception ex) when (ex is DbException || ex.InnerException is DbException)
         {
             ErrorMessage = "Cannot reach the database. Start it with 'docker compose up -d' and try again.";
         }
@@ -327,7 +327,9 @@ public sealed partial class MainViewModel : ObservableObject
         {
             ErrorMessage = ex.Message;
         }
-        catch (DbException)
+        // Npgsql's execution strategy wraps a refused connection in an InvalidOperationException ("likely due to a
+        // transient failure") with the NpgsqlException inside, so match both shapes.
+        catch (Exception ex) when (ex is DbException || ex.InnerException is DbException)
         {
             ErrorMessage = "Cannot reach the database. Start it with 'docker compose up -d' and try again.";
         }
@@ -344,7 +346,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             await LoadCurrentPageAsync(cancellationToken);
         }
-        catch (DbException)
+        catch (Exception ex) when (ex is DbException || ex.InnerException is DbException)
         {
             ErrorMessage = message + ReloadFailedSuffix;
         }

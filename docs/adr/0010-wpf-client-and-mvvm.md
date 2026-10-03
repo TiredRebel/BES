@@ -83,6 +83,11 @@ Facts read from the code that shape the design:
 13. **Paging.** The list shows one assignee's page; status is an optional filter. "Next" uses `NextCursor`;
     "Previous" pops a stack of the cursors already used. Changing a filter resets to the first page.
 
+Amendment (Phase 3, 2026-10-02): an unreachable database does not surface as a bare `DbException`. Npgsql's
+execution strategy throws `InvalidOperationException` ("likely due to a transient failure") with the
+`NpgsqlException` as `InnerException`, so item 9's last catch matches `ex is DbException || ex.InnerException is
+DbException`. Found by running the client with the database stopped; covered by a regression test.
+
 ## Consequences
 
 - The data layer and its migrations are unchanged; the client is the only new production project.

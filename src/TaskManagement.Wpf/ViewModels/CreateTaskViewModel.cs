@@ -125,7 +125,7 @@ public sealed partial class CreateTaskViewModel : ObservableObject
         {
             ErrorMessage = ex.Message;
         }
-        catch (DbException)
+        catch (Exception ex) when (ex is DbException || ex.InnerException is DbException)
         {
             ErrorMessage = "Cannot reach the database. Start it with 'docker compose up -d' and try again.";
         }

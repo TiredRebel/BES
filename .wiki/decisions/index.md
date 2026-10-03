@@ -3,9 +3,9 @@ okf_version: "0.2"
 id: adr-index
 title: Архітектурні рішення (ADR)
 type: Index
-description: Реєстр та індекс архітектурних рішень (ADR 0001-0009) рівня даних Task Management
+description: Реєстр та індекс архітектурних рішень (ADR 0001-0010) рівня даних Task Management
 status: approved
-updated: 2026-09-20
+updated: 2026-10-02
 tags: [okf, adr, architecture-decisions, index]
 related: ["../domain/spec.md", "../index.md"]
 ---
@@ -14,7 +14,7 @@ related: ["../domain/spec.md", "../index.md"]
 
 [ **Українська** ] · [ English ](index.en.md)
 
-Один рядок на кожен ADR. Самі звіти ADR знаходяться в директорії `docs/adr/`. Рішення 0001–0008 були затверджені на етапі N2; 0009 з'явився під час попереднього обговорення реалізації та замінює 0004.
+Один рядок на кожен ADR. Самі звіти ADR знаходяться в директорії `docs/adr/`. Рішення 0001–0008 були затверджені на етапі N2; 0009 з'явився під час попереднього обговорення реалізації та замінює 0004; 0010 затверджено на етапі Phase 1.
 
 - [0001 Структура рішення: три вихідні проєкти, два тестові проєкти](../../docs/adr/0001-solution-layout.md)
 - [0002 Призначення є колонкою завдання, а не окремою таблицею історії](../../docs/adr/0002-assignee-column-on-task.md)
@@ -25,3 +25,4 @@ related: ["../domain/spec.md", "../index.md"]
 - [0007 Статус завдання: чотири значення, збереження у вигляді тексту, одне правило переходів](../../docs/adr/0007-status-as-text-and-transition-rule.md)
 - [0008 Єдиний доменний виняток для порушень бізнес-правил](../../docs/adr/0008-business-rule-violation-exception.md) (доповнено: конструктор із внутрішнім винятком)
 - [0009 BR3 та BR4 забезпечуються в базі даних через тригер](../../docs/adr/0009-br3-br4-enforced-by-trigger.md)
+- [0010 WPF-клієнт над рівнем даних, MVVM з CommunityToolkit.Mvvm](../../docs/adr/0010-wpf-client-and-mvvm.md)

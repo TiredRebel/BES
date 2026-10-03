@@ -2,7 +2,7 @@
 
 [ Decision Process (README) ](README.md) · [ Технічний опис (Українська) ](README.uk.md) · [ **Technical Overview (English)** ]
 
-Task Management is the internal CRM module for assigning, executing and controlling employees' tasks. This repository is its data layer on PostgreSQL + EF Core: domain entities, persistence, an application service, and tests. Scope is backend/data only: no web API, no UI, no server host.
+Task Management is the internal CRM module for assigning, executing and controlling employees' tasks. This repository is its data layer on PostgreSQL + EF Core: domain entities, persistence, an application service, and tests; plus a WPF desktop client for exercising the use cases (see ADR 0010). Scope is backend/data plus a WPF client: no web API, no server host.
 
 | Job | Use case | Implementation |
 |---|---|---|
@@ -29,8 +29,10 @@ Task Management is the internal CRM module for assigning, executing and controll
 | `src/TaskManagement.Domain` | entities (`Employee`, `TaskItem`), enum (`TaskItemStatus`), domain exception (`BusinessRuleViolationException`) |
 | `src/TaskManagement.Infrastructure` | `TaskManagementDbContext`, Fluent configurations, seed data (via `HasData`), migration `InitialCreate`, design-time factory |
 | `src/TaskManagement.Application` | `TaskService` with the three use cases: `CreateTaskAsync`, `ChangeTaskStatusAsync`, `ListTasksAsync` / `ListTasksByAssigneeAsync`, `TaskListQuery`, `TaskCursor`, `PagedResult<T>` |
-| `tests/TaskManagement.UnitTests` | domain unit tests (36 test methods, 56 test cases after theory expansion); references Domain only |
-| `tests/TaskManagement.IntegrationTests` | PostgreSQL database tests and service integration tests (44 test methods, 45 test cases); references Domain, Infrastructure, Application; runs against Testcontainers |
+| `src/TaskManagement.Wpf` | WPF desktop client (`net10.0-windows`, MVVM with CommunityToolkit.Mvvm): App (composition root), ViewModels (`MainViewModel`, `CreateTaskViewModel`), Views (`MainWindow`, `CreateTaskWindow`), Services (`ITaskClient`, `TaskClient`), design-time data |
+| `tests/TaskManagement.UnitTests` | domain unit tests (64 test cases after theory expansion); references Domain only |
+| `tests/TaskManagement.Wpf.UnitTests` | view-model unit tests with fakes (18 tests); references TaskManagement.Wpf |
+| `tests/TaskManagement.IntegrationTests` | PostgreSQL database tests and service integration tests (61 test cases); references Domain, Infrastructure, Application; runs against Testcontainers |
 
 ## Quickstart
 
@@ -48,12 +50,12 @@ Run unit tests only (fast feedback loop, no Docker required):
 dotnet test --filter Category=Unit
 ```
 
-Run all 101 tests (including 45 integration tests on PostgreSQL 17 in Docker):
+Run all 143 tests (including 61 integration tests on PostgreSQL 17 in Docker):
 ```bash
 dotnet test
 ```
 
-> **Note on CI/CD:** An external CI pipeline was consciously omitted (YAGNI). All 101 tests and quality gates (`TreatWarningsAsErrors`) are deterministically verified locally via Testcontainers and real PostgreSQL 17 (for rationale, see [README.md (Section 4.5)](README.md#45-свідома-відмова-від-побудови-ci-пайплайну-conscious-choice--yagni)).
+> **Note on CI/CD:** An external CI pipeline was consciously omitted (YAGNI). All 143 tests and quality gates (`TreatWarningsAsErrors`) are deterministically verified locally via Testcontainers and real PostgreSQL 17 (for rationale, see [README.md (Section 4.5)](README.md#45-свідома-відмова-від-побудови-ci-пайплайну-conscious-choice--yagni)).
 
 ### Migrations (EF Core CLI)
 
@@ -68,6 +70,35 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 ```
 
 > Initial migration `InitialCreate` automatically creates the full schema (tables, indexes, CHECK constraints, trigger `trg_tasks_br3_br4`) and minimal seed data for verification.
+
+## WPF client
+
+A lightweight desktop client (ADR 0010) exercising all use cases against the data layer over a short-lived `DbContext` per operation.
+
+Run the client (requires .NET SDK 10, Docker running with a database, and Windows):
+
+```bash
+docker compose up -d
+dotnet ef database update --project src/TaskManagement.Infrastructure --connection "Host=localhost;Port=5433;Database=task_management;Username=postgres"
+dotnet run --project src/TaskManagement.Wpf
+```
+
+Stop the database:
+```bash
+docker compose down
+```
+
+The database runs on `127.0.0.1:5433` with trust auth (no password) to avoid collision with a PostgreSQL on 5432.
+
+Features:
+- **Task list:** one assignee per view (required filter), status (optional filter), keyset paging (Previous / Next).
+- **Create task:** dialog for title, creator, assignee, planned start, and due date.
+- **Change status:** select a task and change its status.
+- **Reassign:** select a task and change its assignee.
+- **Change history:** view type, old/new values, time, and author of every change.
+- **Acting as:** combo box to record which employee is the author of every change (no authentication).
+
+Business rules BR1–BR5 are enforced by the service layer and database; the UI shows violations in an inline message bar and reloads the list.
 
 ## Where each business rule is enforced
 
@@ -97,4 +128,4 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 - **[.wiki/index.md](.wiki/index.md)**: Start here. Master knowledge bundle in OKF v0.2 format. Maps the domain spec, business rule pages, ADRs, the execution graph ([`.wiki/plan/graph.yaml`](.wiki/plan/graph.yaml)), the session log ([`.wiki/log.md`](.wiki/log.md)), the code map (built with CodeGraph) and the automatic progress checkpoints ([`.wiki/checkpoints/`](.wiki/checkpoints/)). English version: [`.wiki/index.en.md`](.wiki/index.en.md).
 - **[.wiki/domain/spec.md](.wiki/domain/spec.md)**: Complete data model specification (N1 spec), with entities, constraints, indexes, trigger SQL, test plan, and verification (English version: [`.wiki/domain/spec.en.md`](.wiki/domain/spec.en.md)).
 - **[.wiki/domain/](.wiki/domain/)**: Business rule pages ([`br1-completed-at.md`](.wiki/domain/br1-completed-at.md), [`br2-due-not-before-start.md`](.wiki/domain/br2-due-not-before-start.md), [`br3-inactive-assignee.md`](.wiki/domain/br3-inactive-assignee.md), [`br4-final-statuses.md`](.wiki/domain/br4-final-statuses.md), [`br5-no-self-assignment.md`](.wiki/domain/br5-no-self-assignment.md)) and entity pages ([`employee.md`](.wiki/domain/employee.md), [`task-item.md`](.wiki/domain/task-item.md)).
-- **[docs/adr/](docs/adr/)**: Nine Architecture Decision Records ([0001](docs/adr/0001-solution-layout.md)-[0009](docs/adr/0009-br3-br4-enforced-by-trigger.md)). ADR 0009 supersedes ADR 0004. 0001 solution layout, 0002 assignee column, 0003 UUIDv7 keys, 0004 no DB constraint for BR3/BR4 (superseded), 0005 e-mail uniqueness, 0006 UTC and explicit time, 0007 status as text and the transition rule, 0008 the business-rule exception, 0009 the BR3/BR4 trigger.
+- **[docs/adr/](docs/adr/)**: Ten Architecture Decision Records ([0001](docs/adr/0001-solution-layout.md)-[0010](docs/adr/0010-wpf-client-and-mvvm.md)). ADR 0009 supersedes ADR 0004. 0001 solution layout, 0002 assignee column, 0003 UUIDv7 keys, 0004 no DB constraint for BR3/BR4 (superseded), 0005 e-mail uniqueness, 0006 UTC and explicit time, 0007 status as text and the transition rule, 0008 the business-rule exception, 0009 the BR3/BR4 trigger, 0010 WPF client with MVVM.

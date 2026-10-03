@@ -3,9 +3,9 @@ okf_version: "0.2"
 id: adr-index-en
 title: Architecture decisions
 type: Index
-description: Register and index of architecture decision records (ADR 0001-0009) for Task Management Data Layer
+description: Register and index of architecture decision records (ADR 0001-0010) for Task Management Data Layer
 status: approved
-updated: 2026-09-20
+updated: 2026-10-02
 tags: [okf, adr, architecture-decisions, index]
 related: ["../domain/spec.en.md", "../index.en.md"]
 ---
@@ -15,7 +15,7 @@ related: ["../domain/spec.en.md", "../index.en.md"]
 [ Українська ](index.md) · [ **English** ]
 
 One line per ADR. The ADRs live in `docs/adr/`. 0001–0008 were accepted at the N2 gate; 0009 came out of the
-pre-implementation grill and supersedes 0004.
+pre-implementation grill and supersedes 0004; 0010 was accepted at the Phase 1 gate.
 
 - [0001 Solution layout: three source projects, two test projects](../../docs/adr/0001-solution-layout.md)
 - [0002 Assignment is a column on the task, not a history table](../../docs/adr/0002-assignee-column-on-task.md)
@@ -26,3 +26,4 @@ pre-implementation grill and supersedes 0004.
 - [0007 Task status: four values, stored as text, one transition rule](../../docs/adr/0007-status-as-text-and-transition-rule.md)
 - [0008 One domain exception for business-rule violations](../../docs/adr/0008-business-rule-violation-exception.md) (amended: constructor with inner exception)
 - [0009 BR3 and BR4 are enforced in the database by a trigger](../../docs/adr/0009-br3-br4-enforced-by-trigger.md)
+- [0010 WPF client over the data layer, MVVM with CommunityToolkit.Mvvm](../../docs/adr/0010-wpf-client-and-mvvm.md)

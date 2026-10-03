@@ -5,7 +5,7 @@ title: Карта коду та синтаксичний граф (Code Map)
 type: CodeMap
 description: Матеріалізований граф синтаксичних символів, залежностей та зв'язків компонентів з індексу CodeGraph
 status: active
-updated: 2026-09-20
+updated: 2026-10-02
 tags: [okf, codemap, codegraph, ast, architecture]
 related: ["index.md", "domain/spec.md"]
 ---
@@ -25,7 +25,9 @@ Generated from the CodeGraph index (`codegraph sync .`, CodeGraph 1.6.0) after f
 | TaskManagement.Domain | src/TaskManagement.Domain | none | none |
 | TaskManagement.Infrastructure | src/TaskManagement.Infrastructure | TaskManagement.Domain | Microsoft.EntityFrameworkCore 10.0.12, Microsoft.EntityFrameworkCore.Relational 10.0.12, Microsoft.EntityFrameworkCore.Design 10.0.12, Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3 |
 | TaskManagement.Application | src/TaskManagement.Application | TaskManagement.Domain, TaskManagement.Infrastructure | none |
+| TaskManagement.Wpf | src/TaskManagement.Wpf | TaskManagement.Application, TaskManagement.Infrastructure | CommunityToolkit.Mvvm 8.4.2, Microsoft.Extensions.Hosting 10.0.12 |
 | TaskManagement.UnitTests | tests/TaskManagement.UnitTests | TaskManagement.Domain | Microsoft.NET.Test.Sdk 17.14.1, xunit 2.9.3, xunit.runner.visualstudio 3.1.4 |
+| TaskManagement.Wpf.UnitTests | tests/TaskManagement.Wpf.UnitTests | TaskManagement.Wpf | Microsoft.NET.Test.Sdk 17.14.1, xunit 2.9.3, xunit.runner.visualstudio 3.1.4 |
 | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests | TaskManagement.Domain, TaskManagement.Infrastructure, TaskManagement.Application | Microsoft.NET.Test.Sdk 17.14.1, Testcontainers.PostgreSql 4.15.0, xunit 2.9.3, xunit.runner.visualstudio 3.1.4 |
 
 ## Namespaces and types
@@ -52,12 +54,33 @@ Generated from the CodeGraph index (`codegraph sync .`, CodeGraph 1.6.0) after f
 |---|---|---|---|
 | TaskService | class | src/TaskManagement.Application/TaskService.cs | dbContext, timeProvider, CreateTaskAsync, ChangeTaskStatusAsync, ListTasksByAssigneeAsync |
 
+### TaskManagement.Wpf
+| Type | Kind | File | Members |
+|---|---|---|---|
+| App | class | src/TaskManagement.Wpf/App.xaml.cs | OnStartup (host, DI, `AddDbContextFactory`), OnExit, last-resort exception handler |
+| ITaskClient | interface | src/TaskManagement.Wpf/Services/ITaskClient.cs | GetEmployeesAsync, ListTasksAsync, CreateTaskAsync, ChangeStatusAsync, ReassignAsync, GetHistoryAsync |
+| TaskClient | class | src/TaskManagement.Wpf/Services/TaskClient.cs | PageSize; implements ITaskClient with one context per call over TaskService |
+| IDialogService | interface | src/TaskManagement.Wpf/Services/IDialogService.cs | ShowCreateTask |
+| DialogService | class | src/TaskManagement.Wpf/Services/DialogService.cs | ShowCreateTask |
+| EmployeeOption | record | src/TaskManagement.Wpf/Services/ViewData.cs | Id, FullName, IsActive, DisplayName |
+| TaskRow | record | src/TaskManagement.Wpf/Services/ViewData.cs | Id, Title, Status, AssigneeId, AssigneeName, PlannedStartAt, DueAt, CompletedAt |
+| TaskPage | record | src/TaskManagement.Wpf/Services/ViewData.cs | Items, NextCursor |
+| HistoryRow | record | src/TaskManagement.Wpf/Services/ViewData.cs | ChangeType, OldValue, NewValue, ChangedAt, AuthorName |
+| MainViewModel | class | src/TaskManagement.Wpf/ViewModels/MainViewModel.cs | Employees, Tasks, History, StatusFilters, StatusOptions, ActingEmployee, FilterAssignee, SelectedStatusFilter, SelectedTask, NewStatus, NewAssignee, IsBusy, ErrorMessage, PageNumber, LoadCommand, RefreshCommand, NextPageCommand, PreviousPageCommand, CreateTaskCommand, ChangeStatusCommand, ReassignCommand, DismissErrorCommand |
+| StatusFilter | record | src/TaskManagement.Wpf/ViewModels/MainViewModel.cs | Label, Value |
+| CreateTaskViewModel | class | src/TaskManagement.Wpf/ViewModels/CreateTaskViewModel.cs | Employees, Title, Creator, Assignee, PlannedStartDate, DueDate, IsBusy, ErrorMessage, HasError, Created, Initialize, SaveCommand |
+| MainWindow | class | src/TaskManagement.Wpf/Views/MainWindow.xaml.cs | constructor runs LoadCommand on Loaded |
+| CreateTaskWindow | class | src/TaskManagement.Wpf/Views/CreateTaskWindow.xaml.cs | ViewModel; closes on Created |
+| DesignData | class | src/TaskManagement.Wpf/DesignTime/DesignData.cs | Main, CreateTask (design-time view models over a canned ITaskClient) |
+
 ### Tests
 | Test class | Project | File | Test methods |
 |---|---|---|---|
 | EmployeeTests | TaskManagement.UnitTests | tests/TaskManagement.UnitTests/EmployeeTests.cs | 13 |
 | TaskItemCreateTests | TaskManagement.UnitTests | tests/TaskManagement.UnitTests/TaskItemCreateTests.cs | 18 |
 | TaskItemChangeStatusTests | TaskManagement.UnitTests | tests/TaskManagement.UnitTests/TaskItemChangeStatusTests.cs | 5 |
+| MainViewModelTests | TaskManagement.Wpf.UnitTests | tests/TaskManagement.Wpf.UnitTests/MainViewModelTests.cs | 14 |
+| CreateTaskViewModelTests | TaskManagement.Wpf.UnitTests | tests/TaskManagement.Wpf.UnitTests/CreateTaskViewModelTests.cs | 4 |
 | MigrationAndSeedTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/MigrationAndSeedTests.cs | 4 |
 | DatabaseConstraintTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/DatabaseConstraintTests.cs | 14 |
 | TaskServiceTests | TaskManagement.IntegrationTests | tests/TaskManagement.IntegrationTests/TaskServiceTests.cs | 19 |

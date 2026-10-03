@@ -5,9 +5,9 @@ title: База знань (OKF Index)
 type: Index
 description: Компактна семантична пам'ять та карта прийняття рішень для AI-агентів у форматі Open Knowledge Format (OKF v0.2)
 status: active
-updated: 2026-09-20
+updated: 2026-10-02
 tags: [okf, knowledge-bundle, crm, data-layer, dotnet, postgresql]
-related: ["codemap.md", "domain/spec.md", "decisions/index.md", "log.md"]
+related: ["codemap.md", "domain/spec.md", "decisions/index.md", "client/wpf-client.md", "log.md"]
 ---
 
 # Рівень даних Task Management: База знань (OKF Index)
@@ -29,7 +29,7 @@ related: ["codemap.md", "domain/spec.md", "decisions/index.md", "log.md"]
 | **Повна специфікація моделі даних та контрактів** | [domain/spec.md](domain/spec.md) (специфікація N1) |
 | **Сутності домену** | [domain/employee.md](domain/employee.md), [domain/task-item.md](domain/task-item.md) |
 | **Бізнес-правила (BR1-BR5)** | [BR1](domain/br1-completed-at.md), [BR2](domain/br2-due-not-before-start.md), [BR3](domain/br3-inactive-assignee.md), [BR4](domain/br4-final-statuses.md), [BR5](domain/br5-no-self-assignment.md) |
-| **Архітектурні рішення (ADR)** | [decisions/index.md](decisions/index.md) (ADR 0001-0009) |
+| **Архітектурні рішення (ADR)** | [decisions/index.md](decisions/index.md) (ADR 0001-0010) |
 | **Граф виконання завдань (DAG)** | [plan/graph.yaml](plan/graph.yaml) |
 
 ## Поточний стан (оновлено 2026-09-19)
@@ -68,14 +68,15 @@ related: ["codemap.md", "domain/spec.md", "decisions/index.md", "log.md"]
 | [[br3-inactive-assignee]] | BR3: неактивному співробітнику не можна призначити нове завдання. |
 | [[br4-final-statuses]] | BR4: `Completed` та `Cancelled` є фінальними. |
 | [[br5-no-self-assignment]] | BR5: виконавець ≠ автор завдання. |
-| [[decisions/index]] | Посилання на архітектурні рішення ADR у `docs/adr/` (0001–0009; 0009 замінює 0004). |
+| [[client/wpf-client]] | WPF-клієнт: архітектура, кроки запуску, структура проєкту, правила UI-шару, тести. |
+| [[decisions/index]] | Посилання на архітектурні рішення ADR у `docs/adr/` (0001–0010; 0009 замінює 0004). |
 | `checkpoints/` | Автоматичні чекпоінти прогресу, що записуються хуками Claude Code та агентами. |
 | `agents/bus/` | Шина повідомлень агентів: один файл на повідомлення, `<від>-to-<кому>-<номер>.md`. |
 
-## Структура рішення (затверджено на N2; див. [[spec]] §1)
+## Структура рішення (затверджено на N2 + Phase 1; див. [[spec]] §1)
 
 `src/TaskManagement.Domain`, `src/TaskManagement.Infrastructure`, `src/TaskManagement.Application`,
-`tests/TaskManagement.UnitTests`, `tests/TaskManagement.IntegrationTests`, файл рішення `TaskManagement.slnx`.
+`src/TaskManagement.Wpf`, `tests/TaskManagement.UnitTests`, `tests/TaskManagement.Wpf.UnitTests`, `tests/TaskManagement.IntegrationTests`, файл рішення `TaskManagement.slnx`.
 
 ## Бізнес-правила
 

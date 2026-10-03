@@ -2,7 +2,7 @@
  
 [ Процес прийняття рішень (README) ](README.md) · [ **Технічний опис (Українська)** ] · [ Technical Overview (English) ](README.en.md)
 
-**Task Management** - це внутрішній CRM-модуль для призначення, виконання та контролю завдань співробітників. Цей репозиторій є його рівнем даних на стеку **PostgreSQL + EF Core**: доменні сутності, персистентність, прикладний сервіс та тести. Область дії охоплює виключно бекенд/рівень даних: без веб-API, без інтерфейсу користувача (UI) та без окремого хост-сервера.
+**Task Management** - це внутрішній CRM-модуль для призначення, виконання та контролю завдань співробітників. Цей репозиторій є його рівнем даних на стеку **PostgreSQL + EF Core**: доменні сутності, персистентність, прикладний сервіс та тести; плюс WPF-клієнт для роботи з використовуваними сценаріями (див. ADR 0010). Область дії охоплює бекенд/рівень даних плюс WPF-клієнт: без веб-API та без окремого хост-сервера.
 
 | Задача | Сценарій використання | Реалізація |
 |---|---|---|
@@ -29,8 +29,10 @@
 | `src/TaskManagement.Domain` | Доменні сутності (`Employee`, `TaskItem`), перелік (`TaskItemStatus`), доменний виняток (`BusinessRuleViolationException`). Чистий C#, без сторонніх бібліотек. |
 | `src/TaskManagement.Infrastructure` | `TaskManagementDbContext`, Fluent-конфігурації, демо-дані (`HasData`), міграція `InitialCreate`, фабрика часу проектування (`TaskManagementDbContextFactory`). |
 | `src/TaskManagement.Application` | `TaskService` із трьома сценаріями використання: `CreateTaskAsync`, `ChangeTaskStatusAsync`, `ListTasksAsync` / `ListTasksByAssigneeAsync`, `TaskListQuery`, `TaskCursor`, `PagedResult<T>`. |
-| `tests/TaskManagement.UnitTests` | Доменні модульні тести (36 методів, 56 тест-кейсів після розгортання теорій); посилається тільки на `Domain`. |
-| `tests/TaskManagement.IntegrationTests` | Інтеграційні тести бази даних PostgreSQL та сервісу (44 методи, 45 тест-кейсів); посилається на `Domain`, `Infrastructure`, `Application`; виконується через Testcontainers. |
+| `src/TaskManagement.Wpf` | WPF-клієнт (`net10.0-windows`, MVVM з CommunityToolkit.Mvvm): App (корінь композиції), ViewModels (`MainViewModel`, `CreateTaskViewModel`), Views (`MainWindow`, `CreateTaskWindow`), Services (`ITaskClient`, `TaskClient`), дизайн-дані |
+| `tests/TaskManagement.UnitTests` | Доменні модульні тести (64 тест-кейси після розгортання теорій); посилається тільки на `Domain`. |
+| `tests/TaskManagement.Wpf.UnitTests` | View-model модульні тести із фейками (18 тестів); посилається на TaskManagement.Wpf. |
+| `tests/TaskManagement.IntegrationTests` | Інтеграційні тести бази даних PostgreSQL та сервісу (61 тест-кейс); посилається на `Domain`, `Infrastructure`, `Application`; виконується через Testcontainers. |
 
 ## Швидкий старт (Quickstart)
 
@@ -48,12 +50,12 @@ dotnet build -warnaserror
 dotnet test --filter Category=Unit
 ```
 
-Запуск усіх 101 тестів (включно з 45 інтеграційними на PostgreSQL 17 у Docker):
+Запуск усіх 143 тестів (включно з 61 інтеграційним на PostgreSQL 17 у Docker):
 ```bash
 dotnet test
 ```
 
-> **Примітка щодо CI/CD:** Зовнішній CI-пайплайн свідомо не налаштовувався (YAGNI). Усі 101 тест та контроль якості (`TreatWarningsAsErrors`) детерміновано перевіряються локально через Testcontainers та реальний PostgreSQL 17 (детальніше див. [README.md (Розділ 4.5)](README.md#45-свідома-відмова-від-побудови-ci-пайплайну-conscious-choice--yagni)).
+> **Примітка щодо CI/CD:** Зовнішній CI-пайплайн свідомо не налаштовувався (YAGNI). Усі 143 тести та контроль якості (`TreatWarningsAsErrors`) детерміновано перевіряються локально через Testcontainers та реальний PostgreSQL 17 (детальніше див. [README.md (Розділ 4.5)](README.md#45-свідома-відмова-від-побудови-ci-пайплайну-conscious-choice--yagni)).
 
 ### Керування міграціями (EF Core CLI)
 
@@ -68,6 +70,35 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 ```
 
 > Початкова міграція `InitialCreate` автоматично створює повну схему (таблиці, індекси, CHECK-констрейнти, тригер `trg_tasks_br3_br4`) та мінімальні сід-дані для перевірки.
+
+## WPF-клієнт
+
+Легкий настільний клієнт (ADR 0010) для роботи з усіма сценаріями використання щодо рівня даних через коротко живий `DbContext` на операцію.
+
+Запуск клієнта (потрібні .NET SDK 10, Docker з запущеною базою даних та Windows):
+
+```bash
+docker compose up -d
+dotnet ef database update --project src/TaskManagement.Infrastructure --connection "Host=localhost;Port=5433;Database=task_management;Username=postgres"
+dotnet run --project src/TaskManagement.Wpf
+```
+
+Зупинка бази даних:
+```bash
+docker compose down
+```
+
+База даних працює на `127.0.0.1:5433` з trust auth (без пароля) щоб уникнути конфлікту з PostgreSQL на порті 5432.
+
+Можливості:
+- **Список завдань:** завдання одного виконавця (обов'язковий фільтр), статус (опціональний фільтр), keyset пагінація (Попередня / Наступна).
+- **Створення завдання:** діалог для вводу заголовку, автора, виконавця, планованого старту та дедлайну.
+- **Зміна статусу:** для вибраного завдання.
+- **Перепризначення:** вибраного завдання іншому співробітнику.
+- **Історія змін:** вид зміни, старе/нове значення, час та автор кожної зміни.
+- **Від імені:** комбобокс для запису, від імені якого співробітника записується кожна зміна (без аутентифікації).
+
+Бізнес-правила BR1–BR5 забезпечуються рівнем сервісу та базою даних; UI показує порушення у вбудованій смузі повідомлень та перезавантажує список.
 
 ## Where each business rule is enforced - Де забезпечується кожне бізнес-правило
 
@@ -97,4 +128,4 @@ dotnet ef database update --project src/TaskManagement.Infrastructure --connecti
 - **[.wiki/index.md](.wiki/index.md)**: Головна сторінка бази знань у форматі OKF v0.2 (українською). Посилання на специфікацію домену, правила, ADR, граф виконання ([`.wiki/plan/graph.yaml`](.wiki/plan/graph.yaml)), лог сесій ([`.wiki/log.md`](.wiki/log.md)) та чекпоінти ([`.wiki/checkpoints/`](.wiki/checkpoints/)). Англомовна версія: [`.wiki/index.en.md`](.wiki/index.en.md).
 - **[.wiki/domain/spec.md](.wiki/domain/spec.md)**: Повна специфікація моделі даних (N1 spec) із сутностями, обмеженнями, індексами, SQL тригера та планом тестів (англомовна версія: [`.wiki/domain/spec.en.md`](.wiki/domain/spec.en.md)).
 - **[.wiki/domain/](.wiki/domain/)**: Сторінки бізнес-правил [`br1-completed-at.md`](.wiki/domain/br1-completed-at.md), [`br2-due-not-before-start.md`](.wiki/domain/br2-due-not-before-start.md), [`br3-inactive-assignee.md`](.wiki/domain/br3-inactive-assignee.md), [`br4-final-statuses.md`](.wiki/domain/br4-final-statuses.md), [`br5-no-self-assignment.md`](.wiki/domain/br5-no-self-assignment.md) та сутностей [`employee.md`](.wiki/domain/employee.md), [`task-item.md`](.wiki/domain/task-item.md).
-- **[docs/adr/](docs/adr/)**: Дев'ять звітів про архітектурні рішення ([0001](docs/adr/0001-solution-layout.md)-[0009](docs/adr/0009-br3-br4-enforced-by-trigger.md)).
+- **[docs/adr/](docs/adr/)**: Десять звітів про архітектурні рішення ([0001](docs/adr/0001-solution-layout.md)-[0010](docs/adr/0010-wpf-client-and-mvvm.md)).

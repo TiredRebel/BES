@@ -534,3 +534,28 @@ Newest entry at the bottom.
   keyset page query and the assignee-name query; a screenshot showed the seeded tasks for one assignee and "Page 1".
   Status change, reassign and the error bar were not exercised by the orchestrator through the UI.
 - Gates: `dotnet build -warnaserror` 0/0.
+
+## 2026-10-02 · orch (claude-opus-5-5) + sonnet and haiku workers · WPF client, Phase 3: tests, docs, one fix
+
+- Previous commit: `689f94f` (WPF client).
+- Tests (sonnet worker, spec-driven): new project `tests/TaskManagement.Wpf.UnitTests` (`net10.0-windows`, xUnit,
+  `Category=Unit`), `FakeTaskClient`/`FakeDialogService`/`FakeDbException`, 13 `MainViewModel` + 4
+  `CreateTaskViewModel` tests. Orchestrator red checks, each mutation undone afterwards: author = assignee instead of
+  the acting employee → `ChangeStatusCommand_Succeeds_RecordsActingEmployeeAsAuthorAndReloadsList` red; no reload
+  after a rule violation → `..._ServiceThrowsBusinessRuleViolation_SetsErrorMessageAndReloadsList` red; BR4 encoded
+  in `CanChangeStatus` → `ChangeStatusCommand_SelectedTaskIsCompleted_CanStillExecute` red.
+- Fix found by running the app with the compose database stopped: the last-resort dialog appeared. Npgsql's
+  execution strategy throws `InvalidOperationException` ("likely due to a transient failure") wrapping the
+  `NpgsqlException`, so `catch (DbException)` never matched. The four catches in the view models now match
+  `ex is DbException || ex.InnerException is DbException`. Regression test
+  `LoadCommand_DatabaseUnreachableWrappedByExecutionStrategy_SetsErrorMessageWithoutThrowing` (red with the old catch,
+  green with the new). Re-run with the database stopped: the message bar shows "Cannot reach the database…", no crash.
+  ADR 0010 §9 named `DbException` alone; this entry records the correction.
+- UI check after the fix, database up: Cancelled task → status New → message bar "BR4: Task … is Cancelled;
+  Completed and Cancelled are final.", list reloaded, app still running.
+- Docs (haiku worker, template-driven; orchestrator corrected invented members `LoadAsync`/`DismissErrorCommand`/
+  `LoadTasksAsync`, wrong test counts and "test methods" vs "test cases", and a wrong claim that `TaskClient` catches
+  rule exceptions): README.md (UPD 2), README.en.md, README.uk.md (WPF client section, layout rows, counts),
+  `.wiki/client/wpf-client.md`, `.wiki/index.md`/`index.en.md`, `.wiki/decisions/index.md`/`index.en.md`,
+  `.wiki/codemap.md`. `codegraph sync .` run.
+- Gates: `dotnet build -warnaserror` 0/0; `dotnet test` 143/143 (64 unit, 18 WPF view-model, 61 integration).

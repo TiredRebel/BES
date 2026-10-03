@@ -8,5 +8,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/TaskManagement.IntegrationTests/TaskManagement.IntegrationTests.csproj" />
     <Project Path="tests/TaskManagement.UnitTests/TaskManagement.UnitTests.csproj" />
+    <Project Path="tests/TaskManagement.Wpf.UnitTests/TaskManagement.Wpf.UnitTests.csproj" />
   </Folder>
 </Solution>

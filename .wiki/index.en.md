@@ -5,9 +5,9 @@ title: Wiki index (OKF Index)
 type: Index
 description: Compact semantic memory and decision-making retrieval map for AI agents in Open Knowledge Format (OKF v0.2)
 status: active
-updated: 2026-09-20
+updated: 2026-10-02
 tags: [okf, knowledge-bundle, crm, data-layer, dotnet, postgresql]
-related: ["codemap.md", "domain/spec.en.md", "decisions/index.en.md", "log.md"]
+related: ["codemap.md", "domain/spec.en.md", "decisions/index.en.md", "client/wpf-client.md", "log.md"]
 ---
 
 # Task Management data layer: wiki index (OKF Index)
@@ -29,7 +29,7 @@ For rapid decision-making without blind discovery, agents consult these typed OK
 | **Complete data model and contracts** | [domain/spec.en.md](domain/spec.en.md) (N1 specification) |
 | **Domain entities** | [domain/employee.en.md](domain/employee.en.md), [domain/task-item.en.md](domain/task-item.en.md) |
 | **Business rules (BR1-BR5)** | [BR1](domain/br1-completed-at.en.md), [BR2](domain/br2-due-not-before-start.en.md), [BR3](domain/br3-inactive-assignee.en.md), [BR4](domain/br4-final-statuses.en.md), [BR5](domain/br5-no-self-assignment.en.md) |
-| **Architecture Decision Records (ADR)** | [decisions/index.en.md](decisions/index.en.md) (ADR 0001-0009) |
+| **Architecture Decision Records (ADR)** | [decisions/index.en.md](decisions/index.en.md) (ADR 0001-0010) |
 | **Execution DAG graph** | [plan/graph.yaml](plan/graph.yaml) |
 
 ## Current state (updated 2026-09-19)
@@ -79,14 +79,15 @@ For rapid decision-making without blind discovery, agents consult these typed OK
 | [[br3-inactive-assignee]] | BR3: an inactive employee cannot be given a new task. |
 | [[br4-final-statuses]] | BR4: `Completed` and `Cancelled` are final. |
 | [[br5-no-self-assignment]] | BR5: assignee ≠ creator. |
-| [[decisions/index]] | Links to the ADRs in `docs/adr/` (0001–0009; 0009 supersedes 0004). |
+| [[client/wpf-client]] | WPF desktop client: architecture, run steps, project structure, UI rules, tests. |
+| [[decisions/index]] | Links to the ADRs in `docs/adr/` (0001–0010; 0009 supersedes 0004). |
 | `checkpoints/` | Automatic progress checkpoints written by Claude Code hooks and agents before compaction and on API stops. |
 | `agents/bus/` | Message bus: one file per agent message, `<from>-to-<to>-<seq>.md` (task specs, reports, reviews). |
 
-## Solution layout (approved at N2; see [[spec]] §1)
+## Solution layout (approved at N2 + Phase 1; see [[spec]] §1)
 
 `src/TaskManagement.Domain`, `src/TaskManagement.Infrastructure`, `src/TaskManagement.Application`,
-`tests/TaskManagement.UnitTests`, `tests/TaskManagement.IntegrationTests`, solution file `TaskManagement.slnx`.
+`src/TaskManagement.Wpf`, `tests/TaskManagement.UnitTests`, `tests/TaskManagement.Wpf.UnitTests`, `tests/TaskManagement.IntegrationTests`, solution file `TaskManagement.slnx`.
 
 ## Business rules (source: the brief)
 
