@@ -36,7 +36,7 @@ Task Management is the internal CRM module for assigning, executing and controll
 
 ## Quickstart
 
-Requires **.NET 10 SDK** and **Docker** (for Testcontainers with PostgreSQL 17). For detailed platform selection rationale and stack analysis, see [README.md (Section 2.1)](README.md#21-стратегічний-вибір-платформи-net-10-lts-vs-sts-та-субд-postgresql-17).
+Requires **Windows** (the WPF client and its tests target `net10.0-windows`, so the solution builds only on Windows), **.NET 10 SDK** and **Docker** (for Testcontainers with PostgreSQL 17). For detailed platform selection rationale and stack analysis, see [README.md (Section 2.1)](README.md#21-стратегічний-вибір-платформи-net-10-lts-vs-sts-та-субд-postgresql-17).
 
 ### Build & Tests
 

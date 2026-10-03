@@ -559,3 +559,9 @@ Newest entry at the bottom.
   `.wiki/client/wpf-client.md`, `.wiki/index.md`/`index.en.md`, `.wiki/decisions/index.md`/`index.en.md`,
   `.wiki/codemap.md`. `codegraph sync .` run.
 - Gates: `dotnet build -warnaserror` 0/0; `dotnet test` 143/143 (64 unit, 18 WPF view-model, 61 integration).
+
+## 2026-10-03 · orch (claude-opus-5-5) · README requirements: Windows
+
+- Previous commit: `db66a17` (WPF tests, docs, unreachable-database fix).
+- README.en.md and README.uk.md list Windows as a requirement: the WPF client and its tests target
+  `net10.0-windows`, so the solution builds only on Windows. Human decision after the Phase 3 report.
